@@ -3,6 +3,8 @@ import 'dart:developer';
 
 import 'package:gallaerial/data/v_hive/dto/tag_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/video_dto.dart';
+import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/domain/repositories/user_repository.dart';
@@ -45,8 +47,16 @@ class UserRepositoryHiveImpl implements UserRepository {
   // VIDEOS
 
   @override
-  Future<List<VideoEntity>> getVideos() async {
-    return videoBox.values.map((dto) => dto.toVideoEntity()).toList();
+  Future<List<VideoEntity>> getVideos({FilterModel? filterModel, SortModel? sortModel}) async {
+    var videos = videoBox.values.map((dto) => dto.toVideoEntity()).toList();
+    if(filterModel != null) {
+      videos = videos.where((v) => filterModel.match(v)).toList();
+    }
+    if(sortModel != null){
+      await sortModel.sort(videos);
+    }
+
+    return videos;
   }
 
   @override

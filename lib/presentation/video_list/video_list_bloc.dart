@@ -1,4 +1,6 @@
 import 'package:bloc/bloc.dart';
+import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/repositories/user_repository.dart';
 import 'package:gallaerial/domain/useCases/tags/load_tags_use_case.dart';
@@ -33,30 +35,45 @@ class EditVideoNameEvent extends VideoListViewEvent {
   EditVideoNameEvent({required this.video, required this.newName});
 }
 
+class SetFilterEvent extends VideoListViewEvent {
+  final FilterModel filter;
+
+  SetFilterEvent({required this.filter});
+}
+
+class SetSortEvent extends VideoListViewEvent {
+  final SortModel sort;
+
+  SetSortEvent({required this.sort});
+}
+
 class VideoListViewState {
   List<VideoEntity> addedVideosAssets;
   List<TagEntity> allTags;
+  FilterModel filter;
+  SortModel sort;
 
-  VideoListViewState({required this.addedVideosAssets, required this.allTags});
+  VideoListViewState({required this.addedVideosAssets, required this.allTags, required this.filter, required this.sort});
 }
 
 class VideoListBloc extends Bloc<VideoListViewEvent, VideoListViewState> {
-  VideoListBloc() : super(VideoListViewState(addedVideosAssets: [], allTags: [])) {
+  VideoListBloc() : super(VideoListViewState(addedVideosAssets: [], allTags: [], filter: FilterModel(), sort: SortModel.empty())) {
     on<LoadVideosEvent>((event, emit) async {
-      var resVideos = await service<LoadVideosUsecase>().call(NoParams());
+      var resVideos = await service<LoadVideosUsecase>().call(
+        LoadVideoParams(filter: state.filter, sort: state.sort));
       var resTags = await service<LoadTagsUsecase>().call(NoParams());
 
       List<VideoEntity> videos = resVideos.fold(
           (l) => <VideoEntity>[], (r) => r);
       List<TagEntity> tags = resTags.fold(
           (l) => [], (r) => r);
-      emit(VideoListViewState(addedVideosAssets: videos, allTags: tags));
+      emit(VideoListViewState(addedVideosAssets: videos, allTags: tags, filter: state.filter, sort: state.sort));
 
 //Listen to stream
       await emit.forEach<List<VideoEntity>>(
         service<UserRepository>().videoDataStream,
         onData: (updatedVideos) {
-          return VideoListViewState(addedVideosAssets: updatedVideos, allTags: state.allTags);
+          return VideoListViewState(addedVideosAssets: updatedVideos, allTags: state.allTags, filter: state.filter, sort: state.sort);
         },
       );
       
@@ -70,6 +87,22 @@ class VideoListBloc extends Bloc<VideoListViewEvent, VideoListViewState> {
     on<EditVideoNameEvent>((event, emit) async {
       service<EditVideoNameUseCase>().call(
           EditVideoNameUseCaseParams(newName: event.newName, video: event.video));
+    });
+    on<SetFilterEvent>((event, emit) async {
+      var resVideos = await service<LoadVideosUsecase>().call(
+        LoadVideoParams(filter: event.filter, sort: state.sort));
+
+      List<VideoEntity> videos = resVideos.fold(
+          (e) => <VideoEntity>[], (r) => r);
+      emit(VideoListViewState(addedVideosAssets: videos, allTags: state.allTags, filter: event.filter, sort: state.sort));
+    });
+    on<SetSortEvent>((event, emit) async {
+      var resVideos = await service<LoadVideosUsecase>().call(
+        LoadVideoParams(filter: state.filter, sort: event.sort));
+
+      List<VideoEntity> videos = resVideos.fold(
+          (e) => <VideoEntity>[], (r) => r);
+      emit(VideoListViewState(addedVideosAssets: videos, allTags: state.allTags, filter: state.filter, sort: event.sort));
     });
   }
 }

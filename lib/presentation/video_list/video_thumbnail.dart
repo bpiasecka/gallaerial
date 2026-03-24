@@ -25,7 +25,7 @@ class VideoThumbnailWidget extends StatefulWidget {
 }
 
 class VideoThumbnailState extends State<VideoThumbnailWidget> {
-  Duration duration = const Duration(milliseconds: 250);
+  Duration duration = const Duration(milliseconds: 0);
   bool _isTagsExpanded = false;
   final Color buttonsBackground = Colors.black54;
 
