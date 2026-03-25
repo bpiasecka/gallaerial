@@ -35,16 +35,11 @@ class EditVideoNameEvent extends VideoListViewEvent {
   EditVideoNameEvent({required this.video, required this.newName});
 }
 
-class SetFilterEvent extends VideoListViewEvent {
+class SetFilterAndSortEvent extends VideoListViewEvent {
   final FilterModel filter;
-
-  SetFilterEvent({required this.filter});
-}
-
-class SetSortEvent extends VideoListViewEvent {
   final SortModel sort;
 
-  SetSortEvent({required this.sort});
+  SetFilterAndSortEvent({required this.filter, required this.sort});
 }
 
 class VideoListViewState {
@@ -88,21 +83,13 @@ class VideoListBloc extends Bloc<VideoListViewEvent, VideoListViewState> {
       service<EditVideoNameUseCase>().call(
           EditVideoNameUseCaseParams(newName: event.newName, video: event.video));
     });
-    on<SetFilterEvent>((event, emit) async {
+    on<SetFilterAndSortEvent>((event, emit) async {
       var resVideos = await service<LoadVideosUsecase>().call(
-        LoadVideoParams(filter: event.filter, sort: state.sort));
+        LoadVideoParams(filter: event.filter, sort: event.sort));
 
       List<VideoEntity> videos = resVideos.fold(
           (e) => <VideoEntity>[], (r) => r);
-      emit(VideoListViewState(addedVideosAssets: videos, allTags: state.allTags, filter: event.filter, sort: state.sort));
-    });
-    on<SetSortEvent>((event, emit) async {
-      var resVideos = await service<LoadVideosUsecase>().call(
-        LoadVideoParams(filter: state.filter, sort: event.sort));
-
-      List<VideoEntity> videos = resVideos.fold(
-          (e) => <VideoEntity>[], (r) => r);
-      emit(VideoListViewState(addedVideosAssets: videos, allTags: state.allTags, filter: state.filter, sort: event.sort));
+      emit(VideoListViewState(addedVideosAssets: videos, allTags: state.allTags, filter: event.filter, sort: event.sort));
     });
   }
 }

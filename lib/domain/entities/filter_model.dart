@@ -14,17 +14,22 @@ class FilterModel {
       }
     }
     if(tagIds != null && tagIds!.isNotEmpty){
+      if(video.tagIds.isEmpty) return false;
       if(alternativeTags){
         if(!video.tagIds.any((tagId) => tagIds!.contains(tagId))){
           return false;
         }
       } else{
-        if(video.tagIds.any((tagId) => !tagIds!.contains(tagId))){
+        if(tagIds!.any((selectedTag) => !video.tagIds.contains(selectedTag))){
           return false;
         }
       }
     }
 
     return true;
+  }
+
+  bool isEmpty(){
+    return (name == null || name!.isEmpty) && (tagIds == null || tagIds!.isEmpty);
   }
 }
