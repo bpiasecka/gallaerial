@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/extensions/color_extension.dart';
 import 'package:gallaerial/main.dart';
@@ -171,6 +172,8 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
   }
 
   Widget _buildTagsList(BuildContext context, VideoPlayerState state) {
+    var tagsList = state.allTags.where((t) => state.videoEntity!.tagIds.contains(t.id)).toList();
+    tagsList.sort();
     return Container(
       width: 300,
       decoration: const BoxDecoration(
@@ -183,7 +186,6 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
       child: Padding(
         padding: const EdgeInsets.only(top: 60, left: 20),
         child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
           onTapUp: (_) => showDialog(
               context: context, 
               builder: (context) => VideoEditView(initialVideo: state.videoEntity!)
@@ -191,8 +193,8 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 25,
-            children: state.videoEntity!.tagIds.where((tagId) => state.allTags.any((tag) => tag.id == tagId))
-                .map((tagId) => _tagElement(tagId, state))
+            children: tagsList
+                .map((tag) => _tagElement(tag, state))
                 .toList(),
           ),
         ),
@@ -200,11 +202,10 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     );
   }
 
-  Widget _tagElement(String tagId, VideoPlayerState state) {
-    var tag = state.allTags.firstWhereOrNull((t) => t.id == tagId);
-    if (tag == null) return Container(width: 20, height: 20, color: Colors.blue);
+  Widget _tagElement(TagEntity tag, VideoPlayerState state) {
+    //if (tag == null) return Container(width: 20, height: 20, color: Colors.blue);
 
-    return Row(
+    return Container(color: Colors.transparent, child: Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -231,13 +232,13 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
-              fontWeight: FontWeight.w300,
+              fontWeight: FontWeight.w400,
             ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildTopBackButton(BuildContext context) {
@@ -258,7 +259,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         width: 240,
         child: InlineEditableText(
           initialText: state.videoEntity!.name,
-          limit: 24,
+          limit: 50,
           onTextChanged: (text) => context
               .read<VideoPlayerBloc>()
               .add(EditVideoNameEvent(newName: text)),

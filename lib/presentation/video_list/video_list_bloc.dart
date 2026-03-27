@@ -68,6 +68,7 @@ class VideoListBloc extends Bloc<VideoListViewEvent, VideoListViewState> {
       await emit.forEach<List<VideoEntity>>(
         service<UserRepository>().videoDataStream,
         onData: (updatedVideos) {
+          if(updatedVideos.length > state.addedVideosAssets.length) add(SetFilterAndSortEvent(filter: state.filter, sort: state.sort));
           return VideoListViewState(addedVideosAssets: updatedVideos, allTags: state.allTags, filter: state.filter, sort: state.sort);
         },
       );

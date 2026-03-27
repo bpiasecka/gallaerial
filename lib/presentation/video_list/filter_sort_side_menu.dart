@@ -67,18 +67,18 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
                 _buildSectionHeader('Filter', topPadding: 16),
                 _buildNameSearchField(),
                 const SizedBox(height: 16),
+
+                _buildAlternativeTagsSwitch(),
                 
                 Text('Labels', style: Theme.of(context).textTheme.bodyMedium),
                 _buildLabelsList(),
-                _buildAlternativeTagsSwitch(),
-                
-                const Divider(height: 32),
-
-                _buildSectionHeader('Sort'),
-                _buildSortDropdown(),
               ],
             ),
           ),
+          const Divider(height: 32),
+
+          _buildSectionHeader('Sort'),
+          _buildSortDropdown(),
 
           _buildActionButtons(),
         ],
@@ -107,10 +107,8 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
   }
 
   Widget _buildLabelsList() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
+    return Wrap(
+      spacing: 5,
       children: widget.allTags.map((tag) {
         final isSelected = _selectedTagIds.contains(tag.id);
         

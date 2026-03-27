@@ -33,7 +33,7 @@ class VideoListView extends StatelessWidget {
                       child: state.addedVideosAssets.isEmpty 
                         ? _noVideosText(context, state)
                         : GridView.builder(
-                        padding: const EdgeInsets.only(bottom: 60, top: 10),
+                        padding: const EdgeInsets.only(bottom: 80, top: 10),
                         itemBuilder: (context, idx) => idx < state.addedVideosAssets.length
                             ? VideoThumbnailWidget(
                                 key: ValueKey(state.addedVideosAssets[idx].id),
@@ -46,7 +46,7 @@ class VideoListView extends StatelessWidget {
                           crossAxisCount: 2,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
-                          childAspectRatio: 0.8,
+                          childAspectRatio: 0.7,
                         ),
                       )),
                   floatingActionButton: FloatingActionButton(
@@ -99,7 +99,7 @@ class VideoListView extends StatelessWidget {
     final List<AssetEntity>? pickedAssets = await AssetPicker.pickAssets(
       context,
       pickerConfig: const AssetPickerConfig(
-        maxAssets: 10,
+        maxAssets: 100,
         requestType: RequestType.video,
       ),
     );

@@ -9,7 +9,7 @@ class FilterModel {
 
   bool match(VideoEntity video){
     if(name != null && name!.isNotEmpty){
-      if(!video.name.contains(name!)){
+      if(!video.name.toLowerCase().contains(name!.toLowerCase())){
         return false;
       }
     }

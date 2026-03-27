@@ -27,6 +27,7 @@ class VideoThumbnailWidget extends StatefulWidget {
 class VideoThumbnailState extends State<VideoThumbnailWidget> {
   Duration duration = const Duration(milliseconds: 0);
   bool _isTagsExpanded = false;
+  double _scale = 1.0;
   final Color buttonsBackground = Colors.black54;
 
   late Future<Uint8List?> _thumbnailFuture;
@@ -71,14 +72,24 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
         future: _thumbnailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            return Stack(children: [
-              _videoThumbnail(context, snapshot),
-              _deleteButton(context),
-              _editButton(context),
-              _timeLabel(context),
-              _nameWidget(context),
-              _tagsPanel(context)
-            ]);
+            return AnimatedScale(scale: _scale, duration: const Duration(milliseconds: 300), curve: Curves.easeInOutCubic,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Stack(children: [
+                      _videoThumbnail(context, snapshot),
+                      _deleteButton(context),
+                      _editButton(context),
+                      _timeLabel(context),
+                      _tagsPanel(context)
+                    ]),
+                  ),
+                  const SizedBox(height: 6),
+                  _nameWidget(context),
+                ],
+              ),
+            );
           } else if (snapshot.hasError) {
             return const Center(
               child: Text(
@@ -97,9 +108,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
 
   Widget _videoThumbnail(BuildContext context, snapshot) {
     if (snapshot.hasData && snapshot.data != null){
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 25),
-      child: Container(
+    return Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors
@@ -108,16 +117,25 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
             boxShadow: [BoxShadow(blurRadius: 5, spreadRadius: 0.001, color: Theme.of(context).colorScheme.shadow.withAlpha(100), offset: const Offset(0, 2))]
           ),
           clipBehavior: Clip
-              .antiAliasWithSaveLayer, // Ensures video respects border radius
+              .antiAliasWithSaveLayer,
               child: GestureDetector(
-                  onTapUp: (_) => Navigator.of(context).push(MaterialPageRoute(
+                  onTapUp: (_) async {
+                    await Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) =>
-                          FullScreenVideoPlayer(videoEntity: widget.video))),
+                          FullScreenVideoPlayer(videoEntity: widget.video)));
+                    if (!mounted) return;
+                    setState(() => _scale = 1.2);
+                
+                    await Future.delayed(const Duration(milliseconds: 150));
+                
+                    if (!mounted) return;
+                    setState(() => _scale = 1.0);
+                  },
                   child: Image.memory(
                     snapshot.data!,
                     fit: BoxFit.cover,
                     width: double.infinity,
-                  ))),
+                  )),
     );
     }else{
       return Container(
@@ -133,7 +151,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
     return Align(
         alignment: Alignment.bottomRight,
         child: Padding(
-          padding: const EdgeInsets.only(right: 3, bottom: 28),
+          padding: const EdgeInsets.only(right: 3, bottom: 4),
           child: GestureDetector(
             child: Container(
                 decoration: BoxDecoration(
@@ -188,7 +206,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
     return Align(
         alignment: Alignment.bottomRight,
         child: Padding(
-          padding: const EdgeInsets.only(right: 3, bottom: 60),
+          padding: const EdgeInsets.only(right: 3, bottom: 35),
           child: GestureDetector(
             child: Container(
                 decoration: BoxDecoration(
@@ -209,7 +227,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
     return Align(
         alignment: Alignment.bottomLeft,
         child: Padding(
-          padding: const EdgeInsets.only(left: 3, bottom: 28),
+          padding: const EdgeInsets.only(left: 3, bottom: 4),
           child: Container(
               decoration: BoxDecoration(
                   color: buttonsBackground,
@@ -313,14 +331,17 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   }
 
   Widget _nameWidget(BuildContext context) {
-    return Align(
-        alignment: Alignment.bottomCenter,
-        child: InlineEditableText(
-            initialText: widget.video.name,
-            style: Theme.of(context).textTheme.labelMedium,
-            limit: 24,
-            onTextChanged: (name) => context
-                .read<VideoListBloc>()
-                .add(EditVideoNameEvent(video: widget.video, newName: name))));
+    return SizedBox(
+      height: 40,
+      child: Align(
+      alignment: Alignment.topCenter,
+      child: InlineEditableText(
+          initialText: widget.video.name,
+          style: Theme.of(context).textTheme.labelMedium,
+          limit: 50,
+          onTextChanged: (name) => context
+              .read<VideoListBloc>()
+              .add(EditVideoNameEvent(video: widget.video, newName: name))),
+    ));
   }
 }

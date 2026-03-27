@@ -57,7 +57,7 @@ class TagElementState extends State<TagElement> {
               style: Theme.of(context).textTheme.bodyLarge,
               limit: 20)),
           Expanded(child: Container(height: 1)),
-          IconButton(onPressed: () => context.read<TagListBloc>().add(RemoveTagEvent(tag: widget.tag)), icon: const Icon(Icons.delete, color: Colors.black,)),
+          IconButton(onPressed: () => confirmAndRemove(context), icon: const Icon(Icons.delete, color: Colors.black,)),
           ReorderableDragStartListener(
             index: widget.tag.order,
             child: const Padding(
@@ -68,6 +68,36 @@ class TagElementState extends State<TagElement> {
         ],
       ),
     );
+  }
+
+    void confirmAndRemove(BuildContext context){
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        title: const Text('Remove Label'),
+        content: const Text('Are you sure you want to remove this label?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(); 
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<TagListBloc>().add(RemoveTagEvent(tag: widget.tag));
+              
+              Navigator.of(dialogContext).pop(); 
+            },
+            child: const Text(
+              'Remove',
+            ),
+          ),
+        ],
+      );
+    },
+  );
   }
 
   Widget _colorButton(TagEntity tag) {

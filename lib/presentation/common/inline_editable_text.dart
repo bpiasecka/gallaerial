@@ -84,6 +84,7 @@ class _InlineEditableTextState extends State<InlineEditableText> {
         controller: _controller,
         focusNode: _focusNode,
         style: widget.style,
+        //maxLines: 2,
         textInputAction: TextInputAction.done,
         inputFormatters: widget.limit != null 
           ? [LengthLimitingTextInputFormatter(widget.limit)] 
