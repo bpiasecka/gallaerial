@@ -54,7 +54,7 @@ class VideoEditView extends StatelessWidget {
 
   Widget _tagCard(TagEntity tag, bool isSelected, BuildContext context) {
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: Theme.of(context).colorScheme.secondaryContainer,
       elevation: isSelected ? 2 : 1,
       margin: const EdgeInsets.only(bottom: 8.0),
       shape: RoundedRectangleBorder(

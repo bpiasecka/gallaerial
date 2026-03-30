@@ -71,7 +71,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Gallaerial',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 33, 107, 235)),
+        colorScheme: ColorScheme.fromSeed(seedColor:  Color.fromARGB(255, 14, 168, 173)),//const Color.fromARGB(255, 33, 107, 235)),
         useMaterial3: true,
       ),
       home: const MainView(),

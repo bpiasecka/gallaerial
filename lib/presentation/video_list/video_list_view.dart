@@ -64,7 +64,7 @@ class VideoListView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(top: 50),
           child: Card.outlined(
-            color: Theme.of(context).colorScheme.primaryContainer,
+            color: Theme.of(context).colorScheme.secondaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(18.0),
                 child: !state.filter.isEmpty() 

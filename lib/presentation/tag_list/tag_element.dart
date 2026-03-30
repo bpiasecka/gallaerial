@@ -43,7 +43,7 @@ class TagElementState extends State<TagElement> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: Theme.of(context).colorScheme.secondaryContainer,
       shadowColor: Theme.of(context).colorScheme.shadow,
       elevation: 3,
       child: Row(
