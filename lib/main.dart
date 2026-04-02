@@ -3,6 +3,7 @@ import 'package:gallaerial/data/v_hive/dto/tag_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/video_dto.dart';
 import 'package:gallaerial/domain/useCases/tags/change_tags_order_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/edit_video_tags_use_case.dart';
+import 'package:gallaerial/domain/useCases/videos/get_video_use_case.dart';
 import 'package:gallaerial/presentation/main/main_view.dart';
 import 'package:gallaerial/presentation/video_edit/video_edit_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -48,6 +49,7 @@ Future<void> initService() async {
   service.registerFactory(() => TagListBloc());
   service.registerFactory(() => VideoEditBloc());
   service.registerLazySingleton(() => ChangeTagsOrderUseCase(userRepository: service()));
+  service.registerLazySingleton(() => GetVideoUsecase(userRepository: service()));
   service.registerLazySingleton(() => LoadVideosUsecase(userRepository: service()));
   service.registerLazySingleton(() => AddVideosUsecase(userRepository: service()));
   service.registerLazySingleton(() => RemoveVideoUsecase(userRepository: service()));

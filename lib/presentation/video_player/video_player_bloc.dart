@@ -5,14 +5,15 @@ import 'package:gallaerial/domain/repositories/user_repository.dart';
 import 'package:gallaerial/domain/useCases/tags/load_tags_use_case.dart';
 import 'package:gallaerial/domain/useCases/use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/edit_video_name_use_case.dart';
+import 'package:gallaerial/domain/useCases/videos/get_video_use_case.dart';
 import 'package:gallaerial/main.dart';
 
 class VideoPlayerEvent {}
 
 class InitializeWithVideoEvent extends VideoPlayerEvent {
-  final VideoEntity videoEntity;
+  final String videoId;
 
-  InitializeWithVideoEvent({required this.videoEntity});
+  InitializeWithVideoEvent({required this.videoId});
 }
 
 class EditVideoNameEvent extends VideoPlayerEvent {
@@ -31,8 +32,11 @@ class VideoPlayerState {
 class VideoPlayerBloc extends Bloc<VideoPlayerEvent, VideoPlayerState>{
   VideoPlayerBloc() : super(VideoPlayerState(videoEntity: null, allTags: [])){
     on<InitializeWithVideoEvent>((event, emit) async {
-      var res = await service<LoadTagsUsecase>().call(NoParams());
-      res.fold((e){}, (tags) => emit(VideoPlayerState(videoEntity: event.videoEntity, allTags: tags)));
+      var getVideo = await service<GetVideoUsecase>().call(event.videoId);
+      var videoEntity = getVideo.fold((e){}, (v) => v);
+      var tags = await service<LoadTagsUsecase>().call(NoParams());
+      
+      tags.fold((e){}, (tags) => emit(VideoPlayerState(videoEntity: videoEntity, allTags: tags)));
 
        await emit.forEach<List<VideoEntity>>(
         service<UserRepository>().videoDataStream,

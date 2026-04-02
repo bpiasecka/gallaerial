@@ -42,7 +42,7 @@ class CreateTagDialogState extends State<CreateTagDialog>{
                     style: Theme.of(context).textTheme.bodyLarge,);
 
             return AlertDialog(
-              title: const Text('Create new label'),
+              title: const Text('Set color and name'),
               backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
               content:
                 Row(children: [

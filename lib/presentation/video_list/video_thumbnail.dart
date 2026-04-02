@@ -8,16 +8,24 @@ import 'package:gallaerial/presentation/common/inline_editable_text.dart';
 import 'package:gallaerial/presentation/video_edit/video_edit_view.dart';
 import 'package:gallaerial/presentation/video_list/video_list_bloc.dart';
 import 'package:gallaerial/presentation/video_player/video_player_view.dart';
+import 'package:gallaerial/presentation/video_player/videos_loop.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 class VideoThumbnailWidget extends StatefulWidget {
   final VideoEntity video;
+  final List<String> sortedVideosIds;
   final List<TagEntity> tags;
+
+  final ValueNotifier<String?> animatedNotifier;
+  final VoidCallback onTap;
 
   const VideoThumbnailWidget({
     super.key,
     required this.video,
-    required this.tags
+    required this.tags,
+    required this.sortedVideosIds,
+    required this.animatedNotifier,
+    required this.onTap,
   });
 
   @override
@@ -36,13 +44,32 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   void initState() {
     super.initState();
     _thumbnailFuture = _fetchThumbnail();
+  widget.animatedNotifier.addListener(_checkAnimationTrigger);
+  }
+
+  @override
+  void dispose() {
+    widget.animatedNotifier.removeListener(_checkAnimationTrigger);
+    super.dispose();
+  }
+
+  void _checkAnimationTrigger() async {
+    if (widget.animatedNotifier.value == widget.video.id) {
+      if (!mounted) return;
+      setState(() => _scale = 1.2);
+      
+      await Future.delayed(const Duration(milliseconds: 150));
+      
+      if (!mounted) return;
+      setState(() => _scale = 1.0);
+    }
   }
 
   Future<Uint8List?> _fetchThumbnail() async {
     final AssetEntity? asset = await AssetEntity.fromId(widget.video.assetId);
     
     if (asset == null) {
-      return null; // The video was deleted from the device
+      return null; 
     }
 
     final Uint8List? thumbnailData = await asset.thumbnailDataWithSize(
@@ -119,18 +146,8 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
           clipBehavior: Clip
               .antiAliasWithSaveLayer,
               child: GestureDetector(
-                  onTapUp: (_) async {
-                    await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) =>
-                          FullScreenVideoPlayer(videoEntity: widget.video)));
-                    if (!mounted) return;
-                    setState(() => _scale = 1.2);
-                
-                    await Future.delayed(const Duration(milliseconds: 150));
-                
-                    if (!mounted) return;
-                    setState(() => _scale = 1.0);
-                  },
+                  onTapUp: (_) => widget.onTap(),
+                  onLongPress: () => showDialog(context: context, builder: (_) => VideoEditView(initialVideo: widget.video,)),
                   child: Image.memory(
                     snapshot.data!,
                     fit: BoxFit.cover,

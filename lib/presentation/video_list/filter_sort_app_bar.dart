@@ -19,6 +19,7 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
         final hasActiveModifiers = _hasActiveFilters(state.filter) || _hasActiveSort(state.sort);
 
         return AppBar(
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
           actions: [
             if (hasActiveModifiers)
               Expanded(
@@ -41,10 +42,11 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
             Builder(
               builder: (drawerContext) => IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: const Row(
+                icon: const Text('Filter | Sort'),
+                /*const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [Icon(Icons.filter_list_alt), Icon(Icons.sort)],
-                ),
+                ),*/
                 onPressed: () => Scaffold.of(drawerContext).openEndDrawer(),
               ),
             ),

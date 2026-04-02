@@ -1,21 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/main.dart';
 import 'package:gallaerial/presentation/video_list/filter_sort_app_bar.dart';
 import 'package:gallaerial/presentation/video_list/filter_sort_side_menu.dart';
 import 'package:gallaerial/presentation/video_list/video_thumbnail.dart';
 import 'package:gallaerial/presentation/video_list/video_list_bloc.dart';
+import 'package:gallaerial/presentation/video_player/videos_loop.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
-class VideoListView extends StatelessWidget {
+class VideoListView extends StatefulWidget {
   const VideoListView({super.key});
+
+  @override
+  State<VideoListView> createState() => _VideoListViewState();
+}
+
+class _VideoListViewState extends State<VideoListView> {
+  final ValueNotifier<String?> _animatedThumbnailNotifier = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _animatedThumbnailNotifier.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openVideo(VideoEntity video, List<String> sortedIds) async {
+    final returnedId = await Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => VideosLoop(
+            initialVideoId: video.id, 
+            sortedVideosIds: sortedIds
+        )
+    ));
+
+    if (returnedId != null && returnedId is String) {
+      _animatedThumbnailNotifier.value = returnedId;
+      
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _animatedThumbnailNotifier.value = null;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<VideoListBloc>(
-        create: (_) => service()..add(LoadVideosEvent()),
-        child: BlocBuilder<VideoListBloc, VideoListViewState>(
-            builder: (context, state) => Scaffold(
+      create: (_) => service()..add(LoadVideosEvent()),
+      child: BlocBuilder<VideoListBloc, VideoListViewState>(
+        builder: (context, state) => Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
                   appBar: const FilterSortAppBar(),
                   endDrawer: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -27,35 +60,43 @@ class VideoListView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  body: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 0),
-                      child: state.addedVideosAssets.isEmpty 
-                        ? _noVideosText(context, state)
-                        : GridView.builder(
-                        padding: const EdgeInsets.only(bottom: 80, top: 10),
-                        itemBuilder: (context, idx) => idx < state.addedVideosAssets.length
-                            ? VideoThumbnailWidget(
-                                key: ValueKey(state.addedVideosAssets[idx].id),
-                                video: state.addedVideosAssets[idx],
-                                tags: state.allTags,
-                              )
-                            : null,
-                        gridDelegate:
+          body: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+            child: state.addedVideosAssets.isEmpty
+                ? _noVideosText(context, state)
+                : GridView.builder(
+                    padding: const EdgeInsets.only(bottom: 80, top: 10),
+                    gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
                           childAspectRatio: 0.7,
                         ),
-                      )),
-                  floatingActionButton: FloatingActionButton(
+                    itemBuilder: (context, idx) => idx < state.addedVideosAssets.length
+                        ? VideoThumbnailWidget(
+                            key: ValueKey(state.addedVideosAssets[idx].id),
+                            video: state.addedVideosAssets[idx],
+                            tags: state.allTags,
+                            sortedVideosIds: state.addedVideosAssets.map((v) => v.id).toList(),
+                            animatedNotifier: _animatedThumbnailNotifier,
+                            onTap: () => _openVideo(
+                              state.addedVideosAssets[idx], 
+                              state.addedVideosAssets.map((v) => v.id).toList()
+                            ),
+                          )
+                        : null,
+                  ),
+          ),
+          floatingActionButton: FloatingActionButton(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     onPressed: () => pickVideos(context),
                     child: const Icon(Icons.add),
                   ),
-                )));
+        ),
+      ),
+    );
   }
 
   Widget _noVideosText(BuildContext context, VideoListViewState state) {
@@ -64,7 +105,8 @@ class VideoListView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(top: 50),
           child: Card.outlined(
-            color: Theme.of(context).colorScheme.secondaryContainer,
+            color: Theme.of(context).colorScheme.primary.withAlpha(100),
+            elevation: 4,
               child: Padding(
                 padding: const EdgeInsets.all(18.0),
                 child: !state.filter.isEmpty() 

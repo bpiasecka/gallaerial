@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 
 class InlineEditableText extends StatefulWidget {
   final String initialText;
@@ -30,6 +33,8 @@ class _InlineEditableTextState extends State<InlineEditableText> {
   late bool _isEditing; 
   late TextEditingController _controller;
   late FocusNode _focusNode;
+  late StreamSubscription<bool> keyboardSubscription;
+
 
   @override
   void initState() {
@@ -37,6 +42,13 @@ class _InlineEditableTextState extends State<InlineEditableText> {
     _controller = widget.controller ?? TextEditingController(text: widget.initialText);
     _focusNode = FocusNode();
     _isEditing = widget.initialText.isEmpty && widget.hint != null && widget.hint!.isNotEmpty;
+
+    var keyboardVisibilityController = KeyboardVisibilityController();
+    keyboardSubscription = keyboardVisibilityController.onChange.listen((bool visible) {
+      if (!visible) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+    });
 
     if (_isEditing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,6 +77,7 @@ class _InlineEditableTextState extends State<InlineEditableText> {
   void dispose() {
     if(widget.controller == null) _controller.dispose();
     _focusNode.dispose();
+    keyboardSubscription.cancel();
     super.dispose();
   }
 
@@ -90,6 +103,9 @@ class _InlineEditableTextState extends State<InlineEditableText> {
           ? [LengthLimitingTextInputFormatter(widget.limit)] 
           : null,
         onSubmitted: _submit,
+        onTapOutside: (PointerDownEvent event) {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
         decoration: InputDecoration(
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
