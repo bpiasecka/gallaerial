@@ -6,6 +6,7 @@ import 'package:gallaerial/domain/useCases/videos/edit_video_tags_use_case.dart'
 import 'package:gallaerial/domain/useCases/videos/get_video_use_case.dart';
 import 'package:gallaerial/presentation/main/main_view.dart';
 import 'package:gallaerial/presentation/video_edit/video_edit_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:gallaerial/data/v_hive/repositories/user_repository_hive_impl.dart';
 import 'package:gallaerial/domain/useCases/tags/add_tag_use_case.dart';
@@ -75,6 +76,17 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor:  Color.fromARGB(255, 14, 168, 173)),//const Color.fromARGB(255, 33, 107, 235)),
         useMaterial3: true,
+        textTheme: GoogleFonts.loraTextTheme(
+          Theme.of(context).textTheme,
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const TextStyle(fontSize: 15, fontWeight: FontWeight.bold);
+        }
+        return const TextStyle(fontSize: 15);
+      }),
+    ),
       ),
       home: const MainView(),
     );

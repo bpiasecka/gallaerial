@@ -252,7 +252,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               child: Text(
                 formatDuration(duration),
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.white,
                     ),
               )),
@@ -324,11 +324,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
                             padding: const EdgeInsets.only(left: 8.0),
                             child: Text(
                               tag.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                              ),
+                              style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Colors.white),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

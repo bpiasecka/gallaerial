@@ -289,11 +289,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           padding: const EdgeInsets.only(left: 8.0),
           child: Text(
             tag.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.white),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -323,7 +319,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           onTextChanged: (text) => context
               .read<VideoPlayerBloc>()
               .add(EditVideoNameEvent(newName: text)),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70),
+          style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Colors.white),
         ),
       ),
     );
@@ -374,7 +370,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
               children: [
                 Text(
                   "${_formatDuration(_controller!.value.position)} / ${_formatDuration(_controller!.value.duration)}",
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.white),
                 ),
                 IconButton(
                   icon: Icon(

@@ -54,7 +54,7 @@ class TagElementState extends State<TagElement> {
             child: InlineEditableText(
               initialText: widget.tag.name,
               onTextChanged: _changeName,
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: Theme.of(context).textTheme.titleMedium,
               limit: 20)),
           Expanded(child: Container(height: 1)),
           IconButton(onPressed: () => confirmAndRemove(context), icon: const Icon(Icons.delete, color: Colors.black,)),
@@ -118,7 +118,7 @@ class TagElementState extends State<TagElement> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change color of your label'),
+        title: const Text('Change color', textAlign: TextAlign.center,),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: widget.tag.color.toColor()!,
@@ -127,7 +127,7 @@ class TagElementState extends State<TagElement> {
         ),
         actions: <Widget>[
           ElevatedButton(
-            child: const Text('Got it'),
+            child: const Text('Save'),
             onPressed: () {
               viewContext.read<TagListBloc>().add(EditTagColorEvent(oldTag: widget.tag, color: editedColor));
               Navigator.of(context).pop();

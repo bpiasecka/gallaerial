@@ -23,7 +23,7 @@ class VideoEditView extends StatelessWidget {
             backgroundColor: Theme.of(context).colorScheme.onInverseSurface,
             title: Text(
               "Tap on tags to select",
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             content: SizedBox(

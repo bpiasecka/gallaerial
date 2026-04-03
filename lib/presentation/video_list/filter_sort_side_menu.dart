@@ -31,10 +31,10 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
   late UnifiedSortOption _selectedSort;
 
   final Map<UnifiedSortOption, String> _sortNames = {
-    UnifiedSortOption.newest: 'From Newest',
-    UnifiedSortOption.oldest: 'From Oldest',
-    UnifiedSortOption.longest: 'From Longest',
-    UnifiedSortOption.shortest: 'From Shortest',
+    UnifiedSortOption.newest: 'Newest first',
+    UnifiedSortOption.oldest: 'Oldest first',
+    UnifiedSortOption.longest: 'Longest first',
+    UnifiedSortOption.shortest: 'Shortest first',
     UnifiedSortOption.none: 'None',
   };
 
@@ -58,30 +58,33 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildSectionHeader('Filter', topPadding: 16),
-                _buildNameSearchField(),
-                const SizedBox(height: 16),
-
-                _buildAlternativeTagsSwitch(),
-                
-                Text('Labels', style: Theme.of(context).textTheme.bodyMedium),
-                _buildLabelsList(),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildSectionHeader('Filter', topPadding: 16),
+                  _buildNameSearchField(),
+                  const SizedBox(height: 16),
+        
+                  _buildAlternativeTagsSwitch(),
+                  
+                  Text('Labels', style: Theme.of(context).textTheme.titleMedium),
+                  _buildLabelsList(),
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 32),
-
-          _buildSectionHeader('Sort'),
-          _buildSortDropdown(),
-
-          _buildActionButtons(),
-        ],
+            const Divider(height: 32),
+        
+            _buildSectionHeader('Sort'),
+            _buildSortDropdown(),
+        
+            _buildActionButtons(),
+          ],
+        ),
       ),
     );
   }
@@ -91,7 +94,7 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
   Widget _buildSectionHeader(String title, {double topPadding = 0}) {
     return Padding(
       padding: EdgeInsets.only(top: topPadding, bottom: 12.0),
-      child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+      child: Text(title, style: Theme.of(context).textTheme.titleLarge),
     );
   }
 
@@ -132,7 +135,7 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
                 ),
               ),
               const SizedBox(width: 10, height: 1),
-              Text(tag.name),
+              Text(tag.name, style: Theme.of(context).textTheme.bodyLarge,),
             ],
           ),
           shape: RoundedRectangleBorder(
@@ -158,7 +161,7 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
   Widget _buildAlternativeTagsSwitch() {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      title: const Text('Match Any Label'),
+      title: Text('Match Any Label', style: Theme.of(context).textTheme.titleMedium,),
       subtitle: const Text('If off, must match ALL selected labels'),
       value: _alternativeTags,
       onChanged: (val) => setState(() => _alternativeTags = val),
@@ -169,7 +172,7 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 8.0),
+        padding: const EdgeInsets.only(left: 0),
         child: IntrinsicWidth(
           child: DropdownButtonFormField<UnifiedSortOption>(
             initialValue: _selectedSort,

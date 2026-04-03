@@ -55,7 +55,7 @@ class _MainViewState extends State<MainView> {
             ),
             title: Text(
               state.selectedTabIdx == 0 ? "Files" : "Labels",
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ),
           bottomNavigationBar: Stack(

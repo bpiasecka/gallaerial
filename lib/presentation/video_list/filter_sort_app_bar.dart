@@ -42,7 +42,7 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
             Builder(
               builder: (drawerContext) => IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: const Text('Filter | Sort'),
+                icon: Text('Filter | Sort', style: Theme.of(context).textTheme.bodyLarge,),
                 /*const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [Icon(Icons.filter_list_alt), Icon(Icons.sort)],
