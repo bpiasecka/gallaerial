@@ -18,7 +18,7 @@ class EditVideoTagsUseCase extends UseCase<VideoEntity, EditVideoTagsUseCasePara
       else{
         newTags = params.video.tagIds..add(params.clickedTagId);
       }
-      var newEntity = await userRepository.editVideo(params.video, params.video.name, newTags);
+      var newEntity = await userRepository.editVideo(params.video, params.video.name, newTags, params.video.coverPath);
       return Right(newEntity);
     }
     on Error catch (error, _){

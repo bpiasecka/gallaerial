@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/domain/repositories/user_repository.dart';
 import 'package:gallaerial/domain/useCases/tags/load_tags_use_case.dart';
 import 'package:gallaerial/domain/useCases/use_case.dart';
+import 'package:gallaerial/domain/useCases/videos/edit_video_cover_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/edit_video_name_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/get_video_use_case.dart';
 import 'package:gallaerial/main.dart';
@@ -20,6 +23,12 @@ class EditVideoNameEvent extends VideoPlayerEvent {
   final String newName;
 
   EditVideoNameEvent({required this.newName});
+}
+
+class SetCoverImageEvent extends VideoPlayerEvent {
+  final Uint8List image;
+
+  SetCoverImageEvent({required this.image});
 }
 
 class VideoPlayerState {
@@ -48,6 +57,9 @@ class VideoPlayerBloc extends Bloc<VideoPlayerEvent, VideoPlayerState>{
     on<EditVideoNameEvent>((event, emit) async {
       service<EditVideoNameUseCase>().call(
           EditVideoNameUseCaseParams(newName: event.newName, video: state.videoEntity!));
+    });
+    on<SetCoverImageEvent>((event, emit){
+      service<EditVideoCoverUseCase>().call(EditVideoCoverUseCaseParams(video: state.videoEntity!, cover: event.image));
     });
   }
 }

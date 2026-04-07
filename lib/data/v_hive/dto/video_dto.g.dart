@@ -21,13 +21,14 @@ class VideoDtoAdapter extends TypeAdapter<VideoDto> {
       assetId: fields[1] as String,
       name: fields[2] as String,
       tagIds: (fields[3] as List?)?.cast<String>(),
+      coverPath: fields[4] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, VideoDto obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class VideoDtoAdapter extends TypeAdapter<VideoDto> {
       ..writeByte(2)
       ..write(obj.name)
       ..writeByte(3)
-      ..write(obj.tagIds);
+      ..write(obj.tagIds)
+      ..writeByte(4)
+      ..write(obj.coverPath);
   }
 
   @override

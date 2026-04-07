@@ -14,7 +14,12 @@ import 'package:gallaerial/domain/useCases/use_case.dart';
 
 class VideoListViewEvent {}
 
-class LoadVideosEvent extends VideoListViewEvent {}
+class LoadVideosEvent extends VideoListViewEvent {
+  final FilterModel? filter;
+  final SortModel? sort;
+
+  LoadVideosEvent({required this.filter, required this.sort});
+}
 
 class VideoAddedEvent extends VideoListViewEvent {
   final List<String> assetIds;

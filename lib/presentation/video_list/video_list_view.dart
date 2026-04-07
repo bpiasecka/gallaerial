@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/main.dart';
 import 'package:gallaerial/presentation/video_list/filter_sort_app_bar.dart';
@@ -10,7 +12,9 @@ import 'package:gallaerial/presentation/video_player/videos_loop.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 class VideoListView extends StatefulWidget {
-  const VideoListView({super.key});
+  const VideoListView({super.key, this.filterModel, this.sortModel});
+  final FilterModel? filterModel;
+  final SortModel? sortModel;
 
   @override
   State<VideoListView> createState() => _VideoListViewState();
@@ -45,7 +49,7 @@ class _VideoListViewState extends State<VideoListView> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<VideoListBloc>(
-      create: (_) => service()..add(LoadVideosEvent()),
+      create: (_) => service()..add(LoadVideosEvent(filter: widget.filterModel, sort: widget.sortModel)),
       child: BlocBuilder<VideoListBloc, VideoListViewState>(
         builder: (context, state) => Scaffold(
           backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),

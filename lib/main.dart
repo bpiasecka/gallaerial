@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gallaerial/data/v_hive/dto/tag_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/video_dto.dart';
 import 'package:gallaerial/domain/useCases/tags/change_tags_order_use_case.dart';
+import 'package:gallaerial/domain/useCases/videos/edit_video_cover_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/edit_video_tags_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/get_video_use_case.dart';
 import 'package:gallaerial/presentation/main/main_view.dart';
@@ -50,6 +51,7 @@ Future<void> initService() async {
   service.registerFactory(() => TagListBloc());
   service.registerFactory(() => VideoEditBloc());
   service.registerLazySingleton(() => ChangeTagsOrderUseCase(userRepository: service()));
+  service.registerLazySingleton(() => EditVideoCoverUseCase(userRepository: service()));
   service.registerLazySingleton(() => GetVideoUsecase(userRepository: service()));
   service.registerLazySingleton(() => LoadVideosUsecase(userRepository: service()));
   service.registerLazySingleton(() => AddVideosUsecase(userRepository: service()));

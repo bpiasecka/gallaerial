@@ -1,7 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/main.dart';
 import 'package:gallaerial/presentation/tag_list/tag_list_view.dart';
 import 'package:gallaerial/presentation/main/main_bloc.dart';
@@ -16,6 +16,8 @@ class MainView extends StatefulWidget {
 
 class _MainViewState extends State<MainView> {
   late PageController _pageController;
+  FilterModel? filterModel;
+  SortModel? sortModel = SortModel.empty();
 
   @override
   void initState() {

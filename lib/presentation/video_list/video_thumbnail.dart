@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,8 +8,6 @@ import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/presentation/common/inline_editable_text.dart';
 import 'package:gallaerial/presentation/video_edit/video_edit_view.dart';
 import 'package:gallaerial/presentation/video_list/video_list_bloc.dart';
-import 'package:gallaerial/presentation/video_player/video_player_view.dart';
-import 'package:gallaerial/presentation/video_player/videos_loop.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 class VideoThumbnailWidget extends StatefulWidget {
@@ -39,6 +38,7 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   final Color buttonsBackground = Colors.black54;
 
   late Future<Uint8List?> _thumbnailFuture;
+  File? _customCover;
 
   @override
   void initState() {
@@ -77,8 +77,10 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
     );
 
     duration = asset.videoDuration;
+
     return thumbnailData;
   }
+
 
   String formatDuration(Duration duration) {
   String twoDigits(int n) => n.toString().padLeft(2, "0");
@@ -99,6 +101,9 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
         future: _thumbnailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
+            if(widget.video.coverPath != null){
+              _customCover = File(widget.video.coverPath!);
+            }
             return AnimatedScale(scale: _scale, duration: const Duration(milliseconds: 300), curve: Curves.easeInOutCubic,
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,7 +153,9 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
               child: GestureDetector(
                   onTapUp: (_) => widget.onTap(),
                   onLongPress: () => showDialog(context: context, builder: (_) => VideoEditView(initialVideo: widget.video,)),
-                  child: Image.memory(
+                  child: _customCover != null
+                    ? Image.file(_customCover!)
+                    : Image.memory(
                     snapshot.data!,
                     fit: BoxFit.cover,
                     width: double.infinity,

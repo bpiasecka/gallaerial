@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:gallaerial/data/v_hive/dto/tag_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/video_dto.dart';
@@ -10,6 +12,7 @@ import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/domain/repositories/user_repository.dart';
 
 import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
 
 class UserRepositoryHiveImpl implements UserRepository {
   late Box<VideoDto> videoBox;
@@ -84,15 +87,24 @@ class UserRepositoryHiveImpl implements UserRepository {
 
     var updatedVideos = await getVideos();
     _videoDataController.add(updatedVideos);
+
+    if(video.coverPath != null){
+      final file = File(video.coverPath!);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+    
   }
 
   @override
-  Future<VideoEntity> editVideo(VideoEntity video, String newName, List<String> newTagIds) async {
+  Future<VideoEntity> editVideo(VideoEntity video, String newName, List<String> newTagIds, String? coverPath) async {
     final updatedDto = VideoDto(
       id: video.id, 
       assetId: video.assetId,
       name: newName,
-      tagIds: video.tagIds
+      tagIds: video.tagIds,
+      coverPath: coverPath
     );
     
     await videoBox.put(video.id, updatedDto);
@@ -101,6 +113,27 @@ class UserRepositoryHiveImpl implements UserRepository {
     _videoDataController.add(updatedVideos);
     
     return updatedDto.toVideoEntity();
+  }
+
+  @override
+  Future<VideoEntity> setVideoCover(VideoEntity video, Uint8List image) async {
+
+    if(video.coverPath != null){
+      final oldFile = File(video.coverPath!);
+      if (await oldFile.exists()) {
+        await oldFile.delete();
+      }
+    }
+
+    final directory = await getApplicationDocumentsDirectory();
+
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final String fileName = 'thumb_$id.jpg';
+    final File file = File('${directory.path}/$fileName');
+  
+    await file.writeAsBytes(image);    
+    
+    return await editVideo(video, video.name, video.tagIds, file.path);
   }
 
   // ==========================================

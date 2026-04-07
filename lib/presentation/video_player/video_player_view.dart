@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
@@ -12,23 +13,26 @@ import 'package:gallaerial/presentation/video_player/video_player_bloc.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:video_player/video_player.dart';
 import 'package:collection/collection.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class FullScreenVideoPlayer extends StatefulWidget {
   final String videoEntityId;
   final bool isActive;
 
-  const FullScreenVideoPlayer({super.key, required this.videoEntityId, required this.isActive});
+  const FullScreenVideoPlayer(
+      {super.key, required this.videoEntityId, required this.isActive});
 
   @override
   State<FullScreenVideoPlayer> createState() => _FullScreenVideoPlayerState();
 }
 
 class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
-  VideoPlayerController? _controller; 
+  VideoPlayerController? _controller;
   bool _isInitializing = false;
   bool _showControls = true;
   Timer? _hideControlsTimer;
   double _volumeBeforeMute = 1.0;
+  String? _videoFilePath;
 
   @override
   void didUpdateWidget(covariant FullScreenVideoPlayer oldWidget) {
@@ -44,27 +48,29 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     }
   }
 
-
   Future<void> _initializePlayer(VideoPlayerState state) async {
     if (_isInitializing || _controller != null) return;
     _isInitializing = true;
 
-    final AssetEntity? asset = await AssetEntity.fromId(state.videoEntity!.assetId);
+    final AssetEntity? asset =
+        await AssetEntity.fromId(state.videoEntity!.assetId);
     if (asset == null) return;
 
     final File? videoFile = await asset.file;
     if (videoFile == null) return;
 
+    _videoFilePath = videoFile.path;
+
     final newController = VideoPlayerController.file(videoFile);
     try {
       await newController.initialize();
       newController.addListener(_videoListener);
-      
+
       if (mounted) {
         setState(() {
           _controller = newController;
         });
-        
+
         // Only autoplay if this video is currently the one on the screen
         if (widget.isActive) {
           _controller!.play();
@@ -94,12 +100,15 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
       child: BlocConsumer<VideoPlayerBloc, VideoPlayerState>(
         // 1. Listen for the entity to load, then initialize ONCE
         listener: (context, state) {
-          if (state.videoEntity != null && _controller == null && !_isInitializing) {
+          if (state.videoEntity != null &&
+              _controller == null &&
+              !_isInitializing) {
             _initializePlayer(state);
           }
         },
         builder: (context, state) {
-          if (state.videoEntity == null) return const Center(child: CircularProgressIndicator());
+          if (state.videoEntity == null)
+            return const Center(child: CircularProgressIndicator());
 
           return Scaffold(
             backgroundColor: Colors.black,
@@ -168,6 +177,33 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     });
   }
 
+  Future<void> _captureCurrentFrame(BuildContext context) async {
+    if (_controller == null || _videoFilePath == null) return;
+
+    final bool wasPlaying = _controller!.value.isPlaying;
+    if (wasPlaying) _controller!.pause();
+
+    final currentPosition = _controller!.value.position;
+
+    debugPrint("Capturing frame at: ${currentPosition.inMilliseconds} ms");
+
+    final Uint8List? frameBytes = await VideoThumbnail.thumbnailData(
+      video: _videoFilePath!,
+      imageFormat: ImageFormat.JPEG,
+      timeMs: currentPosition.inMilliseconds,
+      quality: 70,
+    );
+
+    if (frameBytes != null && context.mounted) {
+      context.read<VideoPlayerBloc>().add(SetCoverImageEvent(image: frameBytes));
+    }
+
+    if (wasPlaying) {
+      _controller!.play();
+      _startHideControlsTimer();
+    }
+  }
+
   void _startHideControlsTimer() {
     _hideControlsTimer?.cancel();
     _hideControlsTimer = Timer(const Duration(seconds: 4), () {
@@ -195,7 +231,6 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     return "${duration.inMinutes}:$twoDigitSeconds";
   }
 
-
   Widget _buildControlsOverlay(BuildContext context, VideoPlayerState state) {
     if (_isInitializing) return const SizedBox.shrink();
 
@@ -211,6 +246,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
             _buildTopBackButton(context),
             _buildNameEditor(context, state),
             _buildCenterPlayPause(),
+            _savePreviewButton(context),
             _buildBottomControls(context),
           ],
         ),
@@ -224,7 +260,12 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.black87, Colors.transparent, Colors.transparent, Colors.black87],
+          colors: [
+            Colors.black87,
+            Colors.transparent,
+            Colors.transparent,
+            Colors.black87
+          ],
           stops: [0.0, 0.2, 0.7, 1.0],
         ),
       ),
@@ -232,7 +273,9 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
   }
 
   Widget _buildTagsList(BuildContext context, VideoPlayerState state) {
-    var tagsList = state.allTags.where((t) => state.videoEntity!.tagIds.contains(t.id)).toList();
+    var tagsList = state.allTags
+        .where((t) => state.videoEntity!.tagIds.contains(t.id))
+        .toList();
     tagsList.sort();
     return Container(
       width: 300,
@@ -247,15 +290,13 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         padding: const EdgeInsets.only(top: 60, left: 20),
         child: GestureDetector(
           onTapUp: (_) => showDialog(
-              context: context, 
-              builder: (context) => VideoEditView(initialVideo: state.videoEntity!)
-          ),
+              context: context,
+              builder: (context) =>
+                  VideoEditView(initialVideo: state.videoEntity!)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 25,
-            children: tagsList
-                .map((tag) => _tagElement(tag, state))
-                .toList(),
+            children: tagsList.map((tag) => _tagElement(tag, state)).toList(),
           ),
         ),
       ),
@@ -265,36 +306,41 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
   Widget _tagElement(TagEntity tag, VideoPlayerState state) {
     //if (tag == null) return Container(width: 20, height: 20, color: Colors.blue);
 
-    return Container(color: Colors.transparent, child: Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: tag.color.toColor().withAlpha(180),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 5,
-                spreadRadius: 0.001,
-                color: Theme.of(context).colorScheme.shadow.withAlpha(100),
-                offset: const Offset(0, 2),
-              )
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Text(
-            tag.name,
-            style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.white),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    ));
+    return Container(
+        color: Colors.transparent,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: tag.color.toColor().withAlpha(180),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 5,
+                    spreadRadius: 0.001,
+                    color: Theme.of(context).colorScheme.shadow.withAlpha(100),
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(
+                tag.name,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge!
+                    .copyWith(color: Colors.white),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ));
   }
 
   Widget _buildTopBackButton(BuildContext context) {
@@ -303,7 +349,8 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
       left: 10,
       child: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 30),
-        onPressed: () => Navigator.of(context).pop(widget.videoEntityId), // Exit full screen
+        onPressed: () =>
+            Navigator.of(context).pop(widget.videoEntityId), // Exit full screen
       ),
     );
   }
@@ -319,10 +366,48 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           onTextChanged: (text) => context
               .read<VideoPlayerBloc>()
               .add(EditVideoNameEvent(newName: text)),
-          style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Colors.white),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium!
+              .copyWith(color: Colors.white),
         ),
       ),
     );
+  }
+
+  Widget _savePreviewButton(BuildContext context) {
+    return Positioned(
+      bottom: 10, right: 120, left: 120,
+      child: TextButton.icon(
+  style: TextButton.styleFrom(
+    backgroundColor: Colors.black54, // Dark, semi-transparent pill
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
+      side: const BorderSide(color: Colors.white24, width: 1), // Optional subtle border
+    ),
+  ),
+  icon: const Icon(Icons.image_outlined, size: 20),
+  label: const Text(
+    "Set Preview", 
+    style: TextStyle(fontWeight: FontWeight.w600),
+  ),
+  onPressed: () async {
+    await _captureCurrentFrame(context);
+    
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preview image updated!'),
+          margin: EdgeInsets.only(bottom: 90, left: 10, right: 10),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  },
+));
   }
 
   Widget _buildCenterPlayPause() {
@@ -333,7 +418,9 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
       child: IconButton(
         iconSize: 50,
         icon: Icon(
-          _controller!.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+          _controller!.value.isPlaying
+              ? Icons.pause_circle_filled
+              : Icons.play_circle_filled,
           color: Colors.white.withAlpha(204),
         ),
         onPressed: _togglePlay,
@@ -343,12 +430,43 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
 
   Widget _buildBottomControls(BuildContext context) {
     return Positioned(
-      bottom: 0,
+      bottom: 60,
       left: 0,
       right: 0,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(15, 0, 15, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "${_formatDuration(_controller!.value.position)} / ${_formatDuration(_controller!.value.duration)}",
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge!
+                      .copyWith(color: Colors.white),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _controller!.value.volume > 0
+                            ? Icons.volume_up
+                            : Icons.volume_off,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleMute,
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
           GestureDetector(
             onTapDown: (_) => _hideControlsTimer?.cancel(),
             onTapUp: (_) => _resetHideControlsTimer(),
@@ -361,25 +479,6 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
                 backgroundColor: Colors.grey,
               ),
               padding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 0, 15, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "${_formatDuration(_controller!.value.position)} / ${_formatDuration(_controller!.value.duration)}",
-                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Colors.white),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _controller!.value.volume > 0 ? Icons.volume_up : Icons.volume_off,
-                    color: Colors.white,
-                  ),
-                  onPressed: _toggleMute,
-                ),
-              ],
             ),
           ),
         ],
