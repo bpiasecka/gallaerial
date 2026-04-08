@@ -53,17 +53,17 @@ class _VideoListViewState extends State<VideoListView> {
       child: BlocBuilder<VideoListBloc, VideoListViewState>(
         builder: (context, state) => Scaffold(
           backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
-                  appBar: const FilterSortAppBar(),
-                  endDrawer: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Drawer(
-                      child: FilterSortSideMenu(
-                        currentFilter: state.filter,
-                        currentSort: state.sort,
-                        allTags: state.allTags,
-                      ),
-                    ),
-                  ),
+          appBar: const FilterSortAppBar(),
+          endDrawer: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Drawer(
+              child: FilterSortSideMenu(
+              currentFilter: state.filter,
+              currentSort: state.sort,
+              allTags: state.allTags,
+              ),
+            ),
+          ),
           body: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
             child: state.addedVideosAssets.isEmpty

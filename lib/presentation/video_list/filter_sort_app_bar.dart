@@ -10,16 +10,18 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
   const FilterSortAppBar({super.key});
 
   @override
-  Size get preferredSize => const Size(double.infinity, 40);
+  Size get preferredSize => const Size(double.infinity, 48);
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<VideoListBloc, VideoListViewState>(
       builder: (context, state) {
-        final hasActiveModifiers = _hasActiveFilters(state.filter) || _hasActiveSort(state.sort);
+        final hasActiveModifiers =
+            _hasActiveFilters(state.filter) || _hasActiveSort(state.sort);
 
         return AppBar(
-          backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
+          backgroundColor:
+              Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
           actions: [
             if (hasActiveModifiers)
               Expanded(
@@ -30,26 +32,41 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ..._buildTagPills(context, state),
-                      if (state.filter.name != null && state.filter.name!.isNotEmpty)
+                      if (state.filter.name != null &&
+                          state.filter.name!.isNotEmpty)
                         _buildNamePill(context, state),
-                      if (_hasActiveSort(state.sort)) 
+                      if (_hasActiveSort(state.sort))
                         _buildSortPill(context, state),
                     ],
                   ),
                 ),
               ),
-
             Builder(
-              builder: (drawerContext) => IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: Text('Filter | Sort', style: Theme.of(context).textTheme.bodyLarge,),
-                /*const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [Icon(Icons.filter_list_alt), Icon(Icons.sort)],
-                ),*/
-                onPressed: () => Scaffold.of(drawerContext).openEndDrawer(),
-              ),
-            ),
+                builder: (drawerContext) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          InkWell(
+                            onTap: () =>
+                                Scaffold.of(drawerContext).openEndDrawer(),
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0, vertical: 2.0),
+                              child: Text(
+                                'Filter | Sort',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(right: 8.0, top: 2.0),
+                            child: Text(
+                              "${state.addedVideosAssets.length} files",
+                              style: Theme.of(context).textTheme.labelMedium,
+                            ),
+                          ),
+                        ])),
           ],
         );
       },
@@ -60,19 +77,21 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   bool _hasActiveFilters(FilterModel filter) {
     return (filter.tagIds != null && filter.tagIds!.isNotEmpty) ||
-           (filter.name != null && filter.name!.isNotEmpty);
+        (filter.name != null && filter.name!.isNotEmpty);
   }
 
   bool _hasActiveSort(SortModel sort) {
     return sort.dateParameter != DateSortParameter.none ||
-           sort.durationParameter != DurationSortParameter.none;
+        sort.durationParameter != DurationSortParameter.none;
   }
 
   String _getSortText(SortModel sort) {
     if (sort.dateParameter == DateSortParameter.newest) return 'Newest';
     if (sort.dateParameter == DateSortParameter.oldest) return 'Oldest';
-    if (sort.durationParameter == DurationSortParameter.longest) return 'Longest';
-    if (sort.durationParameter == DurationSortParameter.shortest) return 'Shortest';
+    if (sort.durationParameter == DurationSortParameter.longest)
+      return 'Longest';
+    if (sort.durationParameter == DurationSortParameter.shortest)
+      return 'Shortest';
     return '';
   }
 
@@ -96,13 +115,15 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         onRemove: () {
-          final updatedTagIds = List<String>.from(state.filter.tagIds!)..remove(tagId);
+          final updatedTagIds = List<String>.from(state.filter.tagIds!)
+            ..remove(tagId);
           final updatedFilter = FilterModel(
             name: state.filter.name,
             tagIds: updatedTagIds,
             alternativeTags: state.filter.alternativeTags,
           );
-          context.read<VideoListBloc>().add(SetFilterAndSortEvent(filter: updatedFilter, sort: state.sort));
+          context.read<VideoListBloc>().add(
+              SetFilterAndSortEvent(filter: updatedFilter, sort: state.sort));
         },
       );
     }).toList();
@@ -113,11 +134,11 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
       text: '"${state.filter.name!}"',
       onRemove: () {
         final updatedFilter = FilterModel(
-          name: null, 
-          tagIds: state.filter.tagIds, 
-          alternativeTags: state.filter.alternativeTags
-        );
-        context.read<VideoListBloc>().add(SetFilterAndSortEvent(filter: updatedFilter, sort: state.sort));
+            name: null,
+            tagIds: state.filter.tagIds,
+            alternativeTags: state.filter.alternativeTags);
+        context.read<VideoListBloc>().add(
+            SetFilterAndSortEvent(filter: updatedFilter, sort: state.sort));
       },
     );
   }
@@ -127,7 +148,8 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
       text: _getSortText(state.sort),
       leading: const Icon(Icons.sort, color: Colors.white, size: 14),
       onRemove: () {
-        context.read<VideoListBloc>().add(SetFilterAndSortEvent(filter: state.filter, sort: SortModel.empty()));
+        context.read<VideoListBloc>().add(SetFilterAndSortEvent(
+            filter: state.filter, sort: SortModel.empty()));
       },
     );
   }
