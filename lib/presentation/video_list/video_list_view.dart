@@ -71,11 +71,11 @@ class _VideoListViewState extends State<VideoListView> {
                 : GridView.builder(
                     padding: const EdgeInsets.only(bottom: 80, top: 10),
                     gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
-                          childAspectRatio: 0.7,
+                          childAspectRatio: state.settings.showNames ? 0.7 : 0.82,
                         ),
                     itemBuilder: (context, idx) => idx < state.addedVideosAssets.length
                         ? VideoThumbnailWidget(
@@ -84,6 +84,7 @@ class _VideoListViewState extends State<VideoListView> {
                             tags: state.allTags,
                             sortedVideosIds: state.addedVideosAssets.map((v) => v.id).toList(),
                             animatedNotifier: _animatedThumbnailNotifier,
+                            settings: state.settings,
                             onTap: () => _openVideo(
                               state.addedVideosAssets[idx], 
                               state.addedVideosAssets.map((v) => v.id).toList()

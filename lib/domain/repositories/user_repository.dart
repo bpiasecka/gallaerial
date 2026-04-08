@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/settings_model.dart';
 import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
@@ -9,6 +10,10 @@ abstract class UserRepository {
   Future<void> initialize();
   Stream<List<VideoEntity>> get videoDataStream;
   Stream<List<TagEntity>> get tagDataStream;
+  Stream<SettingsModel> get settingsStream;
+
+  Future<SettingsModel> getSettings();
+  Future<SettingsModel> editSettings(SettingsModel newSettings);
 
   Future<List<VideoEntity>> getVideos({FilterModel? filterModel, SortModel? sortModel});
   Future<List<VideoEntity>> addVideos(List<String> paths);

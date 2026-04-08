@@ -3,9 +3,11 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:gallaerial/data/v_hive/dto/settings_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/tag_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/video_dto.dart';
 import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/settings_model.dart';
 import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
@@ -17,19 +19,24 @@ import 'package:path_provider/path_provider.dart';
 class UserRepositoryHiveImpl implements UserRepository {
   late Box<VideoDto> videoBox;
   late Box<TagDto> tagBox;
+  late Box<SettingsDto> settingsBox;
 
   final _videoDataController = StreamController<List<VideoEntity>>.broadcast();
   final _tagDataController = StreamController<List<TagEntity>>.broadcast();
+  final _settingsController = StreamController<SettingsModel>.broadcast();
 
   @override
   Stream<List<VideoEntity>> get videoDataStream => _videoDataController.stream;
   @override
   Stream<List<TagEntity>> get tagDataStream => _tagDataController.stream;
+  @override
+  Stream<SettingsModel> get settingsStream => _settingsController.stream;
 
   @override
   Future<void> initialize() async {
     videoBox = await Hive.openBox('videos');
     tagBox = await Hive.openBox('tags');
+    settingsBox = await Hive.openBox('settings');
 
     await _migrateTagsOrder();
 
@@ -44,6 +51,30 @@ class UserRepositoryHiveImpl implements UserRepository {
   void dispose() {
     _videoDataController.close();
     _tagDataController.close();
+    _settingsController.close();
+  }
+
+  // ==========================================
+  // SETTINGS
+
+  @override
+  Future<SettingsModel> getSettings() async {
+    var settingsDto = settingsBox.values.firstOrNull;
+    var settingsModel = settingsDto?.toSettingsModel();
+    if(settingsModel == null){
+      settingsModel = SettingsModel();
+      return await editSettings(settingsModel);
+    }
+    return settingsModel;
+  }
+
+  @override
+  Future<SettingsModel> editSettings(SettingsModel newSettings) async {
+    settingsBox.clear();
+    var settingsDto = SettingsDto.fromSettingsModel(newSettings);
+    settingsBox.add(settingsDto);
+    _settingsController.add(newSettings);
+    return newSettings;
   }
 
   // ==========================================

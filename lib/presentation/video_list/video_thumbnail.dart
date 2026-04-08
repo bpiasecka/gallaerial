@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:gallaerial/domain/entities/settings_model.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/entities/video_entity.dart';
 import 'package:gallaerial/presentation/common/inline_editable_text.dart';
@@ -14,18 +15,19 @@ class VideoThumbnailWidget extends StatefulWidget {
   final VideoEntity video;
   final List<String> sortedVideosIds;
   final List<TagEntity> tags;
+  final SettingsModel settings;
 
   final ValueNotifier<String?> animatedNotifier;
   final VoidCallback onTap;
 
-  const VideoThumbnailWidget({
-    super.key,
-    required this.video,
-    required this.tags,
-    required this.sortedVideosIds,
-    required this.animatedNotifier,
-    required this.onTap,
-  });
+  const VideoThumbnailWidget(
+      {super.key,
+      required this.video,
+      required this.tags,
+      required this.sortedVideosIds,
+      required this.animatedNotifier,
+      required this.onTap,
+      required this.settings});
 
   @override
   State<VideoThumbnailWidget> createState() => VideoThumbnailState();
@@ -44,7 +46,19 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   void initState() {
     super.initState();
     _thumbnailFuture = _fetchThumbnail();
-  widget.animatedNotifier.addListener(_checkAnimationTrigger);
+    widget.animatedNotifier.addListener(_checkAnimationTrigger);
+    _isTagsExpanded = widget.settings.expandTags;
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoThumbnailWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    if (oldWidget.settings.expandTags != widget.settings.expandTags) {
+      setState(() {
+        _isTagsExpanded = widget.settings.expandTags;
+      });
+    }
   }
 
   @override
@@ -57,9 +71,9 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
     if (widget.animatedNotifier.value == widget.video.id) {
       if (!mounted) return;
       setState(() => _scale = 1.2);
-      
+
       await Future.delayed(const Duration(milliseconds: 150));
-      
+
       if (!mounted) return;
       setState(() => _scale = 1.0);
     }
@@ -67,9 +81,9 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
 
   Future<Uint8List?> _fetchThumbnail() async {
     final AssetEntity? asset = await AssetEntity.fromId(widget.video.assetId);
-    
+
     if (asset == null) {
-      return null; 
+      return null;
     }
 
     final Uint8List? thumbnailData = await asset.thumbnailDataWithSize(
@@ -81,19 +95,18 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
     return thumbnailData;
   }
 
-
   String formatDuration(Duration duration) {
-  String twoDigits(int n) => n.toString().padLeft(2, "0");
-  
-  String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-  String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
 
-  if (duration.inHours > 0) {
-    return "${duration.inHours}:$twoDigitMinutes:$twoDigitSeconds";
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+
+    if (duration.inHours > 0) {
+      return "${duration.inHours}:$twoDigitMinutes:$twoDigitSeconds";
+    }
+
+    return "$twoDigitMinutes:$twoDigitSeconds";
   }
-  
-  return "$twoDigitMinutes:$twoDigitSeconds";
-}
 
   @override
   Widget build(BuildContext context) {
@@ -101,11 +114,14 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
         future: _thumbnailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            if(widget.video.coverPath != null){
+            if (widget.video.coverPath != null) {
               _customCover = File(widget.video.coverPath!);
             }
-            return AnimatedScale(scale: _scale, duration: const Duration(milliseconds: 300), curve: Curves.easeInOutCubic,
-            child: Column(
+            return AnimatedScale(
+              scale: _scale,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
@@ -139,35 +155,46 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   }
 
   Widget _videoThumbnail(BuildContext context, snapshot) {
-    if (snapshot.hasData && snapshot.data != null){
-    return Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors
-                .black,
+    if (snapshot.hasData && snapshot.data != null) {
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+            color: Colors.black,
             borderRadius: BorderRadius.circular(8),
-            boxShadow: [BoxShadow(blurRadius: 5, spreadRadius: 0.001, color: Theme.of(context).colorScheme.shadow.withAlpha(100), offset: const Offset(0, 2))]
-          ),
-          clipBehavior: Clip
-              .antiAliasWithSaveLayer,
-              child: GestureDetector(
-                  onTapUp: (_) => widget.onTap(),
-                  onLongPress: () => showDialog(context: context, builder: (_) => VideoEditView(initialVideo: widget.video,)),
-                  child: _customCover != null
-                    ? Image.file(_customCover!)
-                    : Image.memory(
+            boxShadow: [
+              BoxShadow(
+                  blurRadius: 5,
+                  spreadRadius: 0.001,
+                  color: Theme.of(context).colorScheme.shadow.withAlpha(100),
+                  offset: const Offset(0, 2))
+            ]),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        child: GestureDetector(
+            onTapUp: (_) => widget.onTap(),
+            onLongPress: () => showDialog(
+                context: context,
+                builder: (_) => VideoEditView(
+                      initialVideo: widget.video,
+                    )),
+            child: _customCover != null
+                ? Image.file(
+                    _customCover!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  )
+                : Image.memory(
                     snapshot.data!,
                     fit: BoxFit.cover,
                     width: double.infinity,
                   )),
-    );
-    }else{
+      );
+    } else {
       return Container(
-          color: Colors.grey[300],
-          child: const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey),
-          ),
-        );
+        color: Colors.grey[300],
+        child: const Center(
+          child: Icon(Icons.broken_image, color: Colors.grey),
+        ),
+      );
     }
   }
 
@@ -193,58 +220,62 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
         ));
   }
 
-  void confirmAndRemove(BuildContext context){
-  showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        title: const Text('Remove Video'),
-        content: const Text('Are you sure you want to remove this video? (It will be removed only from this app, the original file remains on your device)'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); 
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context
-                  .read<VideoListBloc>()
-                  .add(VideoRemovedEvent(video: widget.video));
-              
-              Navigator.of(dialogContext).pop(); 
-            },
-            child: const Text(
-              'Remove',
+  void confirmAndRemove(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove Video'),
+          content: const Text(
+              'Are you sure you want to remove this video? (It will be removed only from this app, the original file remains on your device)'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancel'),
             ),
-          ),
-        ],
-      );
-    },
-  );
+            TextButton(
+              onPressed: () {
+                context
+                    .read<VideoListBloc>()
+                    .add(VideoRemovedEvent(video: widget.video));
 
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text(
+                'Remove',
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _editButton(BuildContext context) {
     return Align(
         alignment: Alignment.bottomRight,
         child: Padding(
-          padding: const EdgeInsets.only(right: 3, bottom: 35),
-          child: GestureDetector(
-            child: Container(
-                decoration: BoxDecoration(
-                    color: buttonsBackground,
-                    borderRadius: BorderRadius.circular(8)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                child: const Icon(
-                  Icons.edit,
-                  color: Color.fromARGB(195, 255, 255, 255),
-                  size: 17,
-                )),
-            onTapUp: (_) => showDialog(context: context, builder: (_) => VideoEditView(initialVideo: widget.video,)),
-        )));
+            padding: const EdgeInsets.only(right: 3, bottom: 35),
+            child: GestureDetector(
+              child: Container(
+                  decoration: BoxDecoration(
+                      color: buttonsBackground,
+                      borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: const Icon(
+                    Icons.edit,
+                    color: Color.fromARGB(195, 255, 255, 255),
+                    size: 17,
+                  )),
+              onTapUp: (_) => showDialog(
+                  context: context,
+                  builder: (_) => VideoEditView(
+                        initialVideo: widget.video,
+                      )),
+            )));
   }
 
   Widget _timeLabel(BuildContext context) {
@@ -267,17 +298,18 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   }
 
   Widget _tagsPanel(BuildContext context) {
-    if (!widget.video.tagIds.any((id) => widget.tags.map((t) => t.id).contains(id))) {
+    if (!widget.video.tagIds
+        .any((id) => widget.tags.map((t) => t.id).contains(id))) {
       return const SizedBox.shrink();
     }
 
-    var tagsList = widget.tags.where((t) => widget.video.tagIds.contains(t.id)).toList();
+    var tagsList =
+        widget.tags.where((t) => widget.video.tagIds.contains(t.id)).toList();
     tagsList.sort();
     var limitedTagsList = List<TagEntity>.from(tagsList);
-    if(limitedTagsList.length > 5) {
+    if (limitedTagsList.length > 5) {
       limitedTagsList = limitedTagsList.getRange(0, 5).toList();
     }
-
 
     return Align(
       alignment: Alignment.topLeft,
@@ -300,49 +332,56 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: limitedTagsList.map<Widget>((tag) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 7),
-                    child: SizedBox(
-                      height: 18, child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 15,
-                          height: 15,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: tag.color.toColor()!,
-                            boxShadow: [
-                              BoxShadow(
-                                blurRadius: 5,
-                                spreadRadius: 0.001,
-                                color: Theme.of(context).colorScheme.shadow.withAlpha(100),
-                                offset: const Offset(0, 2),
-                              )
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: limitedTagsList.map<Widget>((tag) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 7),
+                      child: SizedBox(
+                          height: 18,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 15,
+                                height: 15,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: tag.color.toColor()!,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      blurRadius: 5,
+                                      spreadRadius: 0.001,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .shadow
+                                          .withAlpha(100),
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              if (_isTagsExpanded)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: Text(
+                                    tag.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall!
+                                        .copyWith(color: Colors.white),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                             ],
-                          ),
-                        ),
-                        
-                        if (_isTagsExpanded)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text(
-                              tag.name,
-                              style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Colors.white),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
-                    )),
-                  );
-                }).toList()
-                ..add(tagsList.length > 5 ? const Text("...", style: TextStyle(color: Colors.white)) : const SizedBox.shrink())
-                ..add(const SizedBox(height: 10))
-                
-              ),
+                          )),
+                    );
+                  }).toList()
+                    ..add(tagsList.length > 5
+                        ? const Text("...",
+                            style: TextStyle(color: Colors.white))
+                        : const SizedBox.shrink())
+                    ..add(const SizedBox(height: 10))),
             ),
           ),
         ),
@@ -351,17 +390,19 @@ class VideoThumbnailState extends State<VideoThumbnailWidget> {
   }
 
   Widget _nameWidget(BuildContext context) {
+    if (!widget.settings.showNames) return Container();
+
     return SizedBox(
-      height: 40,
-      child: Align(
-      alignment: Alignment.topCenter,
-      child: InlineEditableText(
-          initialText: widget.video.name,
-          style: Theme.of(context).textTheme.labelMedium,
-          limit: 50,
-          onTextChanged: (name) => context
-              .read<VideoListBloc>()
-              .add(EditVideoNameEvent(video: widget.video, newName: name))),
-    ));
+        height: 40,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: InlineEditableText(
+              initialText: widget.video.name,
+              style: Theme.of(context).textTheme.labelMedium,
+              limit: 50,
+              onTextChanged: (name) => context
+                  .read<VideoListBloc>()
+                  .add(EditVideoNameEvent(video: widget.video, newName: name))),
+        ));
   }
 }

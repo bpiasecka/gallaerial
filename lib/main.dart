@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gallaerial/data/v_hive/dto/settings_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/tag_dto.dart';
 import 'package:gallaerial/data/v_hive/dto/video_dto.dart';
+import 'package:gallaerial/domain/useCases/settings/edit_settings_use_case%20copy.dart';
+import 'package:gallaerial/domain/useCases/settings/get_settings_use_case.dart';
 import 'package:gallaerial/domain/useCases/tags/change_tags_order_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/edit_video_cover_use_case.dart';
 import 'package:gallaerial/domain/useCases/videos/edit_video_tags_use_case.dart';
@@ -42,6 +45,7 @@ Future<void> initHive() async {
     await Hive.initFlutter();
     Hive.registerAdapter(TagDtoAdapter());
     Hive.registerAdapter(VideoDtoAdapter());
+    Hive.registerAdapter(SettingsDtoAdapter());
 }
 
 Future<void> initService() async {
@@ -50,6 +54,8 @@ Future<void> initService() async {
   service.registerFactory(() => VideoPlayerBloc());
   service.registerFactory(() => TagListBloc());
   service.registerFactory(() => VideoEditBloc());
+  service.registerLazySingleton(() => EditSettingsUsecase(userRepository: service()));
+  service.registerLazySingleton(() => GetSettingsUsecase(userRepository: service()));
   service.registerLazySingleton(() => ChangeTagsOrderUseCase(userRepository: service()));
   service.registerLazySingleton(() => EditVideoCoverUseCase(userRepository: service()));
   service.registerLazySingleton(() => GetVideoUsecase(userRepository: service()));

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gallaerial/domain/entities/filter_model.dart';
+import 'package:gallaerial/domain/entities/settings_model.dart';
 import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/main.dart';
+import 'package:gallaerial/presentation/settings/settings_drawer.dart';
 import 'package:gallaerial/presentation/tag_list/tag_list_view.dart';
 import 'package:gallaerial/presentation/main/main_bloc.dart';
 import 'package:gallaerial/presentation/video_list/video_list_view.dart';
@@ -34,7 +36,7 @@ class _MainViewState extends State<MainView> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<MainBloc>(
-      create: (context) => service<MainBloc>(),
+      create: (context) => service<MainBloc>()..add(InitMainViewEvent()),
       child: BlocConsumer<MainBloc, MainViewState>(
         listenWhen: (previous, current) => previous.selectedTabIdx != current.selectedTabIdx,
         listener: (context, state) {
@@ -60,6 +62,8 @@ class _MainViewState extends State<MainView> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ),
+          drawer: state.selectedTabIdx == 0 ? SafeArea(child: Padding(padding: const EdgeInsets.only(top: 70, bottom: 90), 
+          child: Drawer(child: SettingsSideMenu(settings: state.settings)))) : null,
           bottomNavigationBar: Stack(
             children: [
               Positioned.fill(
