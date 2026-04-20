@@ -1,14 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gallaerial/domain/entities/asset_entity.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
-import 'package:gallaerial/domain/entities/video_entity.dart';
-import 'package:gallaerial/domain/repositories/user_repository.dart';
+import 'package:gallaerial/domain/repositories/video_repository.dart';
+import 'package:gallaerial/domain/useCases/assets/edit_asset_name_use_case.dart';
 import 'package:gallaerial/domain/useCases/tags/load_tags_use_case.dart';
 import 'package:gallaerial/domain/useCases/use_case.dart';
-import 'package:gallaerial/domain/useCases/videos/edit_video_cover_use_case.dart';
-import 'package:gallaerial/domain/useCases/videos/edit_video_name_use_case.dart';
-import 'package:gallaerial/domain/useCases/videos/get_video_use_case.dart';
+import 'package:gallaerial/domain/useCases/assets/edit_video_cover_use_case.dart';
 import 'package:gallaerial/main.dart';
 
 class VideoPlayerEvent {}
@@ -41,25 +40,32 @@ class VideoPlayerState {
 class VideoPlayerBloc extends Bloc<VideoPlayerEvent, VideoPlayerState>{
   VideoPlayerBloc() : super(VideoPlayerState(videoEntity: null, allTags: [])){
     on<InitializeWithVideoEvent>((event, emit) async {
-      var getVideo = await service<GetVideoUsecase>().call(event.videoId);
-      var videoEntity = getVideo.fold((e){}, (v) => v);
-      var tags = await service<LoadTagsUsecase>().call(NoParams());
-      
-      tags.fold((e){}, (tags) => emit(VideoPlayerState(videoEntity: videoEntity, allTags: tags)));
+      var tagsResult = await dependencyService<LoadTagsUsecase>().call(NoParams());
+      var tags = tagsResult.fold((l) => <TagEntity>[], (r) => r);
 
        await emit.forEach<List<VideoEntity>>(
-        service<UserRepository>().videoDataStream,
+        dependencyService<VideoRepository>().entityDataStream,
         onData: (updatedVideos) {
-          return VideoPlayerState(videoEntity: updatedVideos.firstWhere((v) => v.id == state.videoEntity!.id), allTags: state.allTags);
+          final currentVideo = updatedVideos
+              .where((v) => v.id == event.videoId)
+              .firstOrNull;
+
+          return VideoPlayerState(
+            videoEntity: currentVideo, 
+            allTags: tags
+          );
+        },
+        onError: (error, stackTrace) {
+          return state; 
         },
       );
     });
     on<EditVideoNameEvent>((event, emit) async {
-      service<EditVideoNameUseCase>().call(
-          EditVideoNameUseCaseParams(newName: event.newName, video: state.videoEntity!));
+      dependencyService<EditAssetNameUseCase<VideoEntity>>().call(
+          EditAssetNameUseCaseParams(newName: event.newName, asset: state.videoEntity!));
     });
     on<SetCoverImageEvent>((event, emit){
-      service<EditVideoCoverUseCase>().call(EditVideoCoverUseCaseParams(video: state.videoEntity!, cover: event.image));
+      dependencyService<EditVideoCoverUseCase>().call(EditVideoCoverUseCaseParams(video: state.videoEntity!, cover: event.image));
     });
   }
 }

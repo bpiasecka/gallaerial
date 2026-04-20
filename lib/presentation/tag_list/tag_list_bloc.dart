@@ -2,14 +2,12 @@ import 'dart:ui';
 
 import 'package:bloc/bloc.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
-import 'package:gallaerial/domain/repositories/user_repository.dart';
+import 'package:gallaerial/domain/repositories/tags_repository.dart';
 import 'package:gallaerial/domain/useCases/tags/add_tag_use_case.dart';
 import 'package:gallaerial/domain/useCases/tags/change_tags_order_use_case.dart';
 import 'package:gallaerial/domain/useCases/tags/edit_tag_color_use_case.dart';
 import 'package:gallaerial/domain/useCases/tags/edit_tag_name_use_case.dart';
-import 'package:gallaerial/domain/useCases/tags/load_tags_use_case.dart';
 import 'package:gallaerial/domain/useCases/tags/remove_tag_use_case.dart';
-import 'package:gallaerial/domain/useCases/use_case.dart';
 import 'package:gallaerial/main.dart';
 
 class TagListViewEvent {}
@@ -59,11 +57,8 @@ class TagListViewState {
 class TagListBloc extends Bloc<TagListViewEvent, TagListViewState>{
   TagListBloc() : super(TagListViewState(tags: [])){
     on<LoadTagsEvent>((event, emit) async {
-      var res = await service<LoadTagsUsecase>().call(NoParams());
-      res.fold((e){}, (tags) => emit(TagListViewState(tags: tags)));
-
       await emit.forEach<List<TagEntity>>(
-        service<UserRepository>().tagDataStream,
+        dependencyService<TagsRepository>().tagDataStream,
         onData: (updatedTags) {
           return TagListViewState(tags: updatedTags);
         },
@@ -71,19 +66,19 @@ class TagListBloc extends Bloc<TagListViewEvent, TagListViewState>{
     });
 
     on<AddTagEvent>((event, emit) async {
-      service<AddTagUsecase>().call(TagParams(name: event.name, color: event.color));
+      dependencyService<AddTagUsecase>().call(TagParams(name: event.name, color: event.color));
     });
 
     on<RemoveTagEvent>((event, emit){
-      service<RemoveTagUsecase>().call(event.tag);
+      dependencyService<RemoveTagUsecase>().call(event.tag);
     });
 
     on<EditTagColorEvent>((event, emit){
-      service<EditTagColorUseCase>().call(EditTagColorParams(color: event.color, oldTag: event.oldTag));
+      dependencyService<EditTagColorUseCase>().call(EditTagColorParams(color: event.color, oldTag: event.oldTag));
     });
 
     on<EditTagNameEvent>((event, emit){
-      service<EditTagNameUseCase>().call(EditTagNameParams(newName: event.name, oldTag: event.oldTag));
+      dependencyService<EditTagNameUseCase>().call(EditTagNameParams(newName: event.name, oldTag: event.oldTag));
     });
 
     on<ChangeOrderEvent>((event, emit) async {
@@ -96,7 +91,7 @@ class TagListBloc extends Bloc<TagListViewEvent, TagListViewState>{
 
       emit(TagListViewState(tags: optimisticTags)); 
 
-      var res = await service<ChangeTagsOrderUseCase>().call(ChangeTagsOrderParams(movedTag: event.tag, newTagOrder: event.newOrder));
+      var res = await dependencyService<ChangeTagsOrderUseCase>().call(ChangeTagsOrderParams(movedTag: event.tag, newTagOrder: event.newOrder));
       res.fold((e){}, (tags) => emit(TagListViewState(tags: tags)));
     }
     });

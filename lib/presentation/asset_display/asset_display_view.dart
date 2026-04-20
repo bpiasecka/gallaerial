@@ -1,39 +1,45 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gallaerial/domain/entities/asset_entity.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/extensions/color_extension.dart';
 import 'package:gallaerial/main.dart';
-import 'package:gallaerial/presentation/common/inline_editable_text.dart';
+import 'package:gallaerial/presentation/asset_display/asset_display_bloc.dart';
 import 'package:gallaerial/presentation/asset_tags_edit/asset_edit_view.dart';
-import 'package:gallaerial/presentation/video_player/video_player_bloc.dart';
+import 'package:gallaerial/presentation/common/inline_editable_text.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
-class FullScreenVideoPlayer extends StatefulWidget {
-  final String videoEntityId;
+class FullScreenAssetViewer extends StatefulWidget {
+  final UserAssetEntity initialAsset;
   final bool isActive;
 
-  const FullScreenVideoPlayer(
-      {super.key, required this.videoEntityId, required this.isActive});
+  const FullScreenAssetViewer({
+    super.key, 
+    required this.initialAsset, 
+    this.isActive = true,
+  });
 
   @override
-  State<FullScreenVideoPlayer> createState() => _FullScreenVideoPlayerState();
+  State<FullScreenAssetViewer> createState() => _FullScreenAssetViewerState();
 }
 
-class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
-  VideoPlayerController? _controller;
+class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
   bool _isInitializing = false;
   bool _showControls = true;
   Timer? _hideControlsTimer;
+  File? _mediaFile;
+
+  VideoPlayerController? _controller;
   double _volumeBeforeMute = 1.0;
-  String? _videoFilePath;
 
   @override
-  void didUpdateWidget(covariant FullScreenVideoPlayer oldWidget) {
+  void didUpdateWidget(covariant FullScreenAssetViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_controller != null && _controller!.value.isInitialized) {
       if (widget.isActive && !oldWidget.isActive) {
@@ -46,108 +52,61 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     }
   }
 
-  Future<void> _initializePlayer(VideoPlayerState state) async {
-    if (_isInitializing || _controller != null) return;
+  Future<void> _initializeMedia(UserAssetEntity entity) async {
+    if (_isInitializing) return;
     _isInitializing = true;
 
-    final AssetEntity? asset =
-        await AssetEntity.fromId(state.videoEntity!.assetId);
-    if (asset == null) return;
+    final AssetEntity? pickerAsset = await AssetEntity.fromId(entity.assetId);
+    if (pickerAsset == null) return;
 
-    final File? videoFile = await asset.file;
-    if (videoFile == null) return;
+    final File? file = await pickerAsset.file;
+    if (file == null) return;
 
-    _videoFilePath = videoFile.path;
+    if (mounted) setState(() => _mediaFile = file);
 
-    final newController = VideoPlayerController.file(videoFile);
-    try {
-      await newController.initialize();
-      newController.addListener(_videoListener);
+    if (entity is VideoEntity) {
+      final newController = VideoPlayerController.file(file);
+      try {
+        await newController.initialize();
+        newController.addListener(() { if (mounted) setState(() {}); });
 
-      if (mounted) {
-        setState(() {
-          _controller = newController;
-        });
-
-        // Only autoplay if this video is currently the one on the screen
-        if (widget.isActive) {
-          _controller!.play();
-          _startHideControlsTimer();
+        if (mounted) {
+          setState(() => _controller = newController);
+          if (widget.isActive) {
+            _controller!.play();
+            _startHideControlsTimer();
+          }
         }
+      } catch (e) {
+        debugPrint("Error initializing video: $e");
       }
-    } catch (e) {
-      debugPrint("Error initializing video player: $e");
-    } finally {
-      _isInitializing = false;
+    } else {
+      _startHideControlsTimer();
     }
+
+    _isInitializing = false;
   }
 
   @override
   void dispose() {
-    _controller?.removeListener(_videoListener);
     _controller?.dispose();
     _hideControlsTimer?.cancel();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => dependencyService<VideoPlayerBloc>()
-        ..add(InitializeWithVideoEvent(videoId: widget.videoEntityId)),
-      child: BlocConsumer<VideoPlayerBloc, VideoPlayerState>(
-        // 1. Listen for the entity to load, then initialize ONCE
-        listener: (context, state) {
-          if (state.videoEntity != null &&
-              _controller == null &&
-              !_isInitializing) {
-            _initializePlayer(state);
-          }
-        },
-        builder: (context, state) {
-          if (state.videoEntity == null)
-            return const Center(child: CircularProgressIndicator());
-
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: SafeArea(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showControls = !_showControls;
-                    if (_showControls) {
-                      _resetHideControlsTimer();
-                    }
-                  });
-                },
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _buildVideoLayer(),
-                    _buildControlsOverlay(context, state),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  // --- TIMERS ---
+  void _startHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 4), () {
+      if (widget.initialAsset is VideoEntity && _controller != null && !_controller!.value.isPlaying) {
+        return; 
+      }
+      if (mounted) setState(() => _showControls = false);
+    });
   }
 
-  Widget _buildVideoLayer() {
-    return Center(
-      child: _controller != null && _controller!.value.isInitialized
-          ? AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: VideoPlayer(_controller!),
-            )
-          : const CircularProgressIndicator(color: Colors.white),
-    );
-  }
-
-  void _videoListener() {
-    if (mounted) setState(() {});
+  void _resetHideControlsTimer() {
+    if (_showControls) _startHideControlsTimer();
   }
 
   void _togglePlay() {
@@ -175,61 +134,68 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     });
   }
 
-  Future<void> _captureCurrentFrame(BuildContext context) async {
-    if (_controller == null || _videoFilePath == null) return;
+  // --- BUILD METHOD ---
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => dependencyService<AssetDisplayBloc>()
+        ..add(InitializeAssetEvent(initialAsset: widget.initialAsset)),
+      child: BlocConsumer<AssetDisplayBloc, AssetDisplayState>(
+        listener: (context, state) {
+          if (state.asset != null && _mediaFile == null && !_isInitializing) {
+            _initializeMedia(state.asset!);
+          }
+        },
+        builder: (context, state) {
+          if (state.asset == null) {
+            return const Scaffold(backgroundColor: Colors.black, body: Center(child: CircularProgressIndicator()));
+          }
 
-    final bool wasPlaying = _controller!.value.isPlaying;
-    if (wasPlaying) _controller!.pause();
-
-    final currentPosition = _controller!.value.position;
-
-    debugPrint("Capturing frame at: ${currentPosition.inMilliseconds} ms");
-
-    final Uint8List? frameBytes = await VideoThumbnail.thumbnailData(
-      video: _videoFilePath!,
-      imageFormat: ImageFormat.JPEG,
-      timeMs: currentPosition.inMilliseconds,
-      quality: 70,
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: SafeArea(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showControls = !_showControls;
+                    _resetHideControlsTimer();
+                  });
+                },
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildMediaLayer(state.asset!),
+                    _buildControlsOverlay(context, state),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
-
-    if (frameBytes != null && context.mounted) {
-      context.read<VideoPlayerBloc>().add(SetCoverImageEvent(image: frameBytes));
-    }
-
-    if (wasPlaying) {
-      _controller!.play();
-      _startHideControlsTimer();
-    }
   }
 
-  void _startHideControlsTimer() {
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && _controller!.value.isPlaying) {
-        setState(() {
-          _showControls = false;
-        });
-      }
-    });
-  }
+  // --- LAYER ROUTING (Pattern Matching) ---
+  Widget _buildMediaLayer(UserAssetEntity asset) {
+    if (_mediaFile == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
 
-  void _resetHideControlsTimer() {
-    if (_showControls && _controller!.value.isPlaying) {
-      _startHideControlsTimer();
+    switch (asset) {
+      case ImageEntity _:
+        return Center(child: Image.file(_mediaFile!, fit: BoxFit.contain));
+      case VideoEntity _:
+        return Center(
+          child: _controller != null && _controller!.value.isInitialized
+              ? AspectRatio(
+                  aspectRatio: _controller!.value.aspectRatio,
+                  child: VideoPlayer(_controller!),
+                )
+              : const CircularProgressIndicator(color: Colors.white),
+        );
     }
   }
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    if (duration.inHours > 0) {
-      return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
-    }
-    return "${duration.inMinutes}:$twoDigitSeconds";
-  }
-
-  Widget _buildControlsOverlay(BuildContext context, VideoPlayerState state) {
+  Widget _buildControlsOverlay(BuildContext context, AssetDisplayState state) {
     if (_isInitializing) return const SizedBox.shrink();
 
     return AnimatedOpacity(
@@ -239,13 +205,18 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         ignoring: !_showControls,
         child: Stack(
           children: [
-            _buildGradientBackground(),
-            _buildTagsList(context, state),
-            _buildTopBackButton(context),
-            _buildNameEditor(context, state),
-            _buildCenterPlayPause(),
-            _savePreviewButton(context),
-            _buildBottomControls(context),
+            // Shared Overlays
+            _buildGradientBackground(), // Keep your existing method
+            _buildTagsList(context, state), // Keep your existing method
+            _buildTopBackButton(context), // Keep your existing method
+            _buildNameEditor(context, state), // Keep your existing method
+
+            // Video-Specific Overlays
+            if (state.asset is VideoEntity && _controller != null) ...[
+              _buildCenterPlayPause(), // Keep your existing method
+              _savePreviewButton(context), // Keep your existing method
+              _buildBottomControls(context), // Keep your existing method
+            ]
           ],
         ),
       ),
@@ -270,9 +241,9 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     );
   }
 
-  Widget _buildTagsList(BuildContext context, VideoPlayerState state) {
+  Widget _buildTagsList(BuildContext context, AssetDisplayState state) {
     var tagsList = state.allTags
-        .where((t) => state.videoEntity!.tagIds.contains(t.id))
+        .where((t) => state.asset!.tagIds.contains(t.id))
         .toList();
     tagsList.sort();
     return Container(
@@ -282,6 +253,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [Color.fromARGB(195, 0, 0, 0), Colors.transparent],
+          stops: [0.0, 0.5],
         ),
       ),
       child: Padding(
@@ -290,7 +262,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           onTapUp: (_) => showDialog(
               context: context,
               builder: (context) =>
-                  AssetEditView(initialAsset: state.videoEntity!)),
+                  AssetEditView(initialAsset: state.asset!)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 25,
@@ -301,7 +273,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
     );
   }
 
-  Widget _tagElement(TagEntity tag, VideoPlayerState state) {
+  Widget _tagElement(TagEntity tag, AssetDisplayState state) {
     //if (tag == null) return Container(width: 20, height: 20, color: Colors.blue);
 
     return Container(
@@ -348,22 +320,22 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
       child: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 30),
         onPressed: () =>
-            Navigator.of(context).pop(widget.videoEntityId), // Exit full screen
+            Navigator.of(context).pop(widget.initialAsset.id),
       ),
     );
   }
 
-  Widget _buildNameEditor(BuildContext context, VideoPlayerState state) {
+  Widget _buildNameEditor(BuildContext context, AssetDisplayState state) {
     return Align(
       alignment: Alignment.topCenter,
       child: SizedBox(
         width: 240,
         child: InlineEditableText(
-          initialText: state.videoEntity!.name,
+          initialText: state.asset!.name,
           limit: 50,
           onTextChanged: (text) => context
-              .read<VideoPlayerBloc>()
-              .add(EditVideoNameEvent(newName: text)),
+              .read<AssetDisplayBloc>()
+              .add(EditAssetNameEvent(newName: text)),
           style: Theme.of(context)
               .textTheme
               .titleMedium!
@@ -482,5 +454,42 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         ],
       ),
     );
+  }
+
+  Future<void> _captureCurrentFrame(BuildContext context) async {
+    if (_controller == null || _mediaFile == null) return;
+
+    final bool wasPlaying = _controller!.value.isPlaying;
+    if (wasPlaying) _controller!.pause();
+
+    final currentPosition = _controller!.value.position;
+
+    debugPrint("Capturing frame at: ${currentPosition.inMilliseconds} ms");
+
+    final Uint8List? frameBytes = await VideoThumbnail.thumbnailData(
+      video: _mediaFile!.path,
+      imageFormat: ImageFormat.JPEG,
+      timeMs: currentPosition.inMilliseconds,
+      quality: 70,
+    );
+
+    if (frameBytes != null && context.mounted) {
+      context.read<AssetDisplayBloc>().add(SetCoverImageEvent(image: frameBytes));
+    }
+
+    if (wasPlaying) {
+      _controller!.play();
+      _startHideControlsTimer();
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    if (duration.inHours > 0) {
+      return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+    }
+    return "${duration.inMinutes}:$twoDigitSeconds";
   }
 }

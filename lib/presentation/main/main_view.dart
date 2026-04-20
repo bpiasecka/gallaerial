@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gallaerial/domain/entities/filter_model.dart';
-import 'package:gallaerial/domain/entities/settings_model.dart';
 import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/main.dart';
 import 'package:gallaerial/presentation/settings/settings_drawer.dart';
 import 'package:gallaerial/presentation/tag_list/tag_list_view.dart';
 import 'package:gallaerial/presentation/main/main_bloc.dart';
-import 'package:gallaerial/presentation/video_list/video_list_view.dart';
+import 'package:gallaerial/presentation/asset_list/asset_list_view.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -36,7 +35,7 @@ class _MainViewState extends State<MainView> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<MainBloc>(
-      create: (context) => service<MainBloc>()..add(InitMainViewEvent()),
+      create: (context) => dependencyService<MainBloc>()..add(InitMainViewEvent()),
       child: BlocConsumer<MainBloc, MainViewState>(
         listenWhen: (previous, current) => previous.selectedTabIdx != current.selectedTabIdx,
         listener: (context, state) {
@@ -95,7 +94,7 @@ class _MainViewState extends State<MainView> {
               context.read<MainBloc>().add(SwitchTabEvent(newTabIdx: idx));
             },
             children: const [
-              VideoListView(),
+              AssetListView(),
               TagListView(),
             ],
           ),

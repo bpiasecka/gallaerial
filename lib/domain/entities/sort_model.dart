@@ -1,4 +1,4 @@
-import 'package:gallaerial/domain/entities/video_entity.dart';
+import 'package:gallaerial/domain/entities/asset_entity.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class SortModel {
@@ -9,14 +9,14 @@ class SortModel {
 
   static SortModel empty() => SortModel(dateParameter: DateSortParameter.none, durationParameter: DurationSortParameter.none);
 
-  Future<void> sort(List<VideoEntity> list) async {
+  Future<void> sort(List<UserAssetEntity> list) async {
     if(dateParameter == DateSortParameter.none && durationParameter == DurationSortParameter.none) return;
 
     final Map<String, AssetEntity?> assetCache = {};
 
-    await Future.wait(list.map((video) async {
-      var asset = await AssetEntity.fromId(video.assetId);
-      assetCache[video.assetId] = asset;
+    await Future.wait(list.map((userAsset) async {
+      var asset = await AssetEntity.fromId(userAsset.assetId);
+      assetCache[userAsset.assetId] = asset;
     }));
 
     if(dateParameter == DateSortParameter.newest){

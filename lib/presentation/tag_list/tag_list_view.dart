@@ -11,7 +11,7 @@ class TagListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<TagListBloc>(
-      create: (_) => service()..add(LoadTagsEvent()),
+      create: (_) => dependencyService()..add(LoadTagsEvent()),
       child: BlocBuilder<TagListBloc, TagListViewState>(
         builder: (context, state) {
           return Scaffold(

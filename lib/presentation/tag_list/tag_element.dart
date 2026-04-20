@@ -35,7 +35,7 @@ class TagElementState extends State<TagElement> {
   }
 
   void _changeName(String name) {
-    service<EditTagNameUseCase>().call(EditTagNameParams(
+    dependencyService<EditTagNameUseCase>().call(EditTagNameParams(
       newName: name,
       oldTag: widget.tag));
   }

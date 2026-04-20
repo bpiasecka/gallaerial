@@ -1,4 +1,4 @@
-import 'package:gallaerial/domain/entities/video_entity.dart';
+import 'package:gallaerial/domain/entities/asset_entity.dart';
 
 class FilterModel {
   final String? name;
@@ -7,20 +7,20 @@ class FilterModel {
 
   FilterModel({this.name, this.tagIds,  this.alternativeTags = false});
 
-  bool match(VideoEntity video){
+  bool match(UserAssetEntity asset){
     if(name != null && name!.isNotEmpty){
-      if(!video.name.toLowerCase().contains(name!.toLowerCase())){
+      if(!asset.name.toLowerCase().contains(name!.toLowerCase())){
         return false;
       }
     }
     if(tagIds != null && tagIds!.isNotEmpty){
-      if(video.tagIds.isEmpty) return false;
+      if(asset.tagIds.isEmpty) return false;
       if(alternativeTags){
-        if(!video.tagIds.any((tagId) => tagIds!.contains(tagId))){
+        if(!asset.tagIds.any((tagId) => tagIds!.contains(tagId))){
           return false;
         }
       } else{
-        if(tagIds!.any((selectedTag) => !video.tagIds.contains(selectedTag))){
+        if(tagIds!.any((selectedTag) => !asset.tagIds.contains(selectedTag))){
           return false;
         }
       }

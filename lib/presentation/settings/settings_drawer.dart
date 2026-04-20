@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gallaerial/domain/entities/settings_model.dart';
-import 'package:gallaerial/domain/useCases/settings/edit_settings_use_case%20copy.dart';
+import 'package:gallaerial/domain/useCases/settings/edit_settings_use_case.dart';
 import 'package:gallaerial/main.dart';
 
 class SettingsSideMenu extends StatefulWidget {
@@ -43,7 +43,7 @@ class _SettingsSideMenuState extends State<SettingsSideMenu> {
             value: showNames,
             onChanged: (val) {
               setState(() => showNames = val);
-              service<EditSettingsUsecase>().call(SettingsModel(showNames: val, expandTags: expandTags));
+              dependencyService<EditSettingsUseCase>().call(SettingsModel(showNames: val, expandTags: expandTags));
             }),
         SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -54,7 +54,7 @@ class _SettingsSideMenuState extends State<SettingsSideMenu> {
             value: expandTags,
             onChanged: (val) {
               setState(() => expandTags = val);
-              service<EditSettingsUsecase>().call(SettingsModel(showNames: showNames, expandTags: val));
+              dependencyService<EditSettingsUseCase>().call(SettingsModel(showNames: showNames, expandTags: val));
             }),
             const Expanded(child: SizedBox(width: 1,),),
         TextButton(

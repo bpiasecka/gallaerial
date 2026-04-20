@@ -1,17 +1,17 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
-import 'package:gallaerial/domain/repositories/user_repository.dart';
+import 'package:gallaerial/domain/repositories/tags_repository.dart';
 import 'package:gallaerial/domain/useCases/use_case.dart';
 
 class EditTagNameUseCase extends UseCase<TagEntity, EditTagNameParams>{
-  final UserRepository userRepository;
+  final TagsRepository repository;
 
-  EditTagNameUseCase({required this.userRepository});
+  EditTagNameUseCase({required this.repository});
 
   @override
   Future<Either<Error, TagEntity>> call(params) async {
     try{
-      var newEnityty = await userRepository.editTag(params.oldTag, params.oldTag.color, params.newName);
+      var newEnityty = await repository.editTag(params.oldTag, params.oldTag.color, params.newName);
       return Right(newEnityty);
     }
     on Error catch (error, _){
