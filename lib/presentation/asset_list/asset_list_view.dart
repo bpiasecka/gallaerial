@@ -22,24 +22,54 @@ class AssetListView extends StatefulWidget {
 
 class _AssetListViewState extends State<AssetListView> {
   final ValueNotifier<String?> _animatedThumbnailNotifier = ValueNotifier(null);
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _animatedThumbnailNotifier.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _openAsset(UserAssetEntity asset, List<UserAssetEntity> sortedAssets, BuildContext context) async {
+  Future<void> _openAsset(UserAssetEntity asset, AssetListViewState state, BuildContext context) async {
     final returnedId = await Navigator.of(context).push(MaterialPageRoute(
         builder: (loopContext) => BlocProvider<AssetListBloc>.value(
           value: context.read<AssetListBloc>(), 
           child: AssetsLoop(
-            initialAsset: asset, 
-            sortedAssets: sortedAssets,
+            initialAsset: asset,
+            sortedAssets: state.displayedAssets,
         ))
     ));
 
     if (returnedId != null && returnedId is String) {
+      final targetIndex = state.displayedAssets.indexWhere((a) => a.id == returnedId);
+
+      if (targetIndex != -1) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        const crossAxisCount = 2;
+        const crossAxisSpacing = 10.0;
+        const mainAxisSpacing = 10.0;
+        const horizontalPadding = 10.0 * 2;
+
+        final availableWidth = screenWidth - horizontalPadding - (crossAxisSpacing * (crossAxisCount - 1));
+        final itemWidth = availableWidth / crossAxisCount;
+        final childAspectRatio = state.settings.showNames ? 0.7 : 0.82;
+        final itemHeight = itemWidth / childAspectRatio;
+
+        final rowIndex = targetIndex ~/ crossAxisCount;
+        double targetOffset = (rowIndex * (itemHeight + mainAxisSpacing));
+
+        if (_scrollController.hasClients) {
+          final maxScroll = _scrollController.position.maxScrollExtent;
+          if (targetOffset > maxScroll) targetOffset = maxScroll;
+
+          await _scrollController.animateTo(
+            targetOffset,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      }
       _animatedThumbnailNotifier.value = returnedId;
       
       Future.delayed(const Duration(milliseconds: 400), () {
@@ -72,37 +102,36 @@ class _AssetListViewState extends State<AssetListView> {
             child: state.displayedAssets.isEmpty
                 ? _noAssetsText(context, state)
                 : GridView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.only(bottom: 80, top: 10),
-                    gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: state.settings.showNames ? 0.7 : 0.82,
-                        ),
-                    itemBuilder: (context, idx) => idx < state.displayedAssets.length
-                        ? AssetThumbnailWidget(
-                            key: ValueKey(state.displayedAssets[idx].id),
-                            asset: state.displayedAssets[idx],
-                            tags: state.allTags,
-                            sortedAssetsIds: state.displayedAssets.map((v) => v.id).toList(),
-                            animatedNotifier: _animatedThumbnailNotifier,
-                            settings: state.settings,
-                            onTap: () => _openAsset(
-                              state.displayedAssets[idx], 
-                              state.displayedAssets,
-                              context
-                            ),
-                          )
-                        : null,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: state.settings.showNames ? 0.7 : 0.82,
+                    ),
+                    itemCount: state.displayedAssets.length,
+                    itemBuilder: (context, idx) => AssetThumbnailWidget(
+                      key: ValueKey(state.displayedAssets[idx].id),
+                      asset: state.displayedAssets[idx],
+                      tags: state.allTags,
+                      sortedAssetsIds: state.displayedAssets.map((v) => v.id).toList(),
+                      animatedNotifier: _animatedThumbnailNotifier,
+                      settings: state.settings,
+                      onTap: () => _openAsset(
+                        state.displayedAssets[idx], 
+                        state,
+                        context
+                      ),
+                    ),
                   ),
           ),
           floatingActionButton: FloatingActionButton(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    onPressed: () => pickAssets(context, state),
-                    child: const Icon(Icons.add),
-                  ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            onPressed: () => pickAssets(context, state),
+            child: const Icon(Icons.add),
+          ),
         ),
       ),
     );
