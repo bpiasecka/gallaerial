@@ -8,13 +8,12 @@ import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/domain/repositories/image_repository.dart';
 import 'package:gallaerial/domain/repositories/settings_repository.dart';
+import 'package:gallaerial/domain/repositories/tags_repository.dart';
 import 'package:gallaerial/domain/repositories/video_repository.dart';
 import 'package:gallaerial/domain/useCases/assets/add_assets_use_case.dart';
 import 'package:gallaerial/domain/useCases/assets/edit_asset_name_use_case.dart';
 import 'package:gallaerial/domain/useCases/assets/remove_asset_use_case.dart';
-import 'package:gallaerial/domain/useCases/tags/load_tags_use_case.dart';
 import 'package:gallaerial/main.dart';
-import 'package:gallaerial/domain/useCases/use_case.dart';
 import 'package:rxdart/rxdart.dart';
 
 enum AssetFilterType {all, video, image}
@@ -112,15 +111,13 @@ class AssetListBloc extends Bloc<AssetListViewEvent, AssetListViewState> {
       assetType: AssetFilterType.video)) {
 
     on<LoadAssetsEvent>((event, emit) async {
-      var tagsRes = await dependencyService<LoadTagsUsecase>().call(NoParams());
-      var tags = tagsRes.fold((l) => <TagEntity>[], (r) => r);
-
-      final combinedStream = Rx.combineLatest3(
+      final combinedStream = Rx.combineLatest4(
         dependencyService<VideoRepository>().entityDataStream,
         dependencyService<ImageRepository>().entityDataStream,
         dependencyService<SettingsRepository>().settingsStream,
-        (List<VideoEntity> videos, List<ImageEntity> images, SettingsModel settings) {
-          return (videos: videos, images: images, settings: settings);
+        dependencyService<TagsRepository>().tagDataStream,
+        (List<VideoEntity> videos, List<ImageEntity> images, SettingsModel settings, List<TagEntity> tags) {
+          return (videos: videos, images: images, settings: settings, tags: tags);
         }
       ).asyncMap((data) async {
         final processedAssets = await _processAssets(
@@ -141,7 +138,7 @@ class AssetListBloc extends Bloc<AssetListViewEvent, AssetListViewState> {
             allImages: result.rawData.images,
             settings: result.rawData.settings,
             displayedAssets: result.processed,
-            allTags: tags,
+            allTags: result.rawData.tags,
           );
         },
       );

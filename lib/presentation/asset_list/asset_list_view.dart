@@ -20,9 +20,12 @@ class AssetListView extends StatefulWidget {
   State<AssetListView> createState() => _AssetListViewState();
 }
 
-class _AssetListViewState extends State<AssetListView> {
+class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveClientMixin{
   final ValueNotifier<String?> _animatedThumbnailNotifier = ValueNotifier(null);
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -80,6 +83,8 @@ class _AssetListViewState extends State<AssetListView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+    
     return BlocProvider<AssetListBloc>(
       create: (_) => dependencyService()..add(LoadAssetsEvent(filter: widget.filterModel, sort: widget.sortModel)),
       child: BlocBuilder<AssetListBloc, AssetListViewState>(

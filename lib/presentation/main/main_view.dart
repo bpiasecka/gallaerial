@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gallaerial/domain/entities/filter_model.dart';
-import 'package:gallaerial/domain/entities/sort_model.dart';
 import 'package:gallaerial/main.dart';
 import 'package:gallaerial/presentation/settings/settings_drawer.dart';
 import 'package:gallaerial/presentation/tag_list/tag_list_view.dart';
@@ -17,8 +15,8 @@ class MainView extends StatefulWidget {
 
 class _MainViewState extends State<MainView> {
   late PageController _pageController;
-  FilterModel? filterModel;
-  SortModel? sortModel = SortModel.empty();
+  final AssetListView assetsTab = const AssetListView();
+  final TagListView tagsTab = const TagListView();
 
   @override
   void initState() {
@@ -93,9 +91,9 @@ class _MainViewState extends State<MainView> {
             onPageChanged: (idx) {
               context.read<MainBloc>().add(SwitchTabEvent(newTabIdx: idx));
             },
-            children: const [
-              AssetListView(),
-              TagListView(),
+            children:[
+              assetsTab,
+              tagsTab,
             ],
           ),
         ),
