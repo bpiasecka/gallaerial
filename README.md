@@ -28,8 +28,9 @@ All data is currently stored 100% locally using **Hive**, ensuring blazing-fast 
 The application is currently fully functional for local use and is in the **Closed Testing phase** on the Google Play Store. 
 
 **Upcoming Features:**
+- [x] *Manual selection of cover image*
+- [x] *Extend stored asset types to images"
 - [ ] *Camera inside app*
-- [ ] *Manual selection of preview screen*
 - [ ] *Clean up mode*
 
 
