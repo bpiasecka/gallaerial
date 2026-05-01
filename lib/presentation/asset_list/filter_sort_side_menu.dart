@@ -61,17 +61,19 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
+    return //SafeArea(
+     // child:
+       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: ListView(
+                padding: EdgeInsets.zero,
                 children: [
                   _buildSectionHeader('Filter', topPadding: 16),
-                  _buildAssetTypeButton(),
+                  //_buildAssetTypeButton(),
                   const SizedBox(height: 8),
                   _buildNameSearchField(),
                   const SizedBox(height: 16),
@@ -91,7 +93,7 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
             _buildActionButtons(),
           ],
         ),
-      ),
+     // ),
     );
   }
 
@@ -118,8 +120,8 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
   Widget _buildAssetTypeButton(){
     return SegmentedButton<AssetFilterType>(
       segments: const [
-        ButtonSegment(value: AssetFilterType.video, label: Text("Videos")),
-        ButtonSegment(value: AssetFilterType.image, label: Text("Images"))
+        ButtonSegment(value: AssetFilterType.video, label: Text("Video")),
+        ButtonSegment(value: AssetFilterType.image, label: Text("Image"))
       ],
       showSelectedIcon: false,
       selected: {_selectedAssetType},

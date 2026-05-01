@@ -54,6 +54,12 @@ class SetFilterAndSortEvent extends AssetListViewEvent {
   SetFilterAndSortEvent({required this.filter, required this.sort, required this.assetType});
 }
 
+class SetAssetTypeEvent extends AssetListViewEvent {
+  final AssetFilterType assetType;
+
+  SetAssetTypeEvent({required this.assetType});
+}
+
 class AssetListViewState {
   final List<VideoEntity> allVideos;
   final List<ImageEntity> allImages;
@@ -191,7 +197,24 @@ class AssetListBloc extends Bloc<AssetListViewEvent, AssetListViewState> {
         assetType: event.assetType,
       ));
     });
+    
+        
+    on<SetAssetTypeEvent>((event, emit) async {
+      final processedAssets = await _processAssets(
+        videos: state.allVideos,
+        images: state.allImages,
+        filter: state.filter,
+        sort: state.sort,
+        assetType: event.assetType,
+      );
+
+      emit(state.copyWith(
+        displayedAssets: processedAssets,
+        assetType: event.assetType,
+      ));
+    });
   }
+
 
   Future<List<UserAssetEntity>> _processAssets ({
     required List<VideoEntity> videos,

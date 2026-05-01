@@ -47,18 +47,6 @@ class _MainViewState extends State<MainView> {
         },
         builder: (context, state) => Scaffold(
           backgroundColor: Theme.of(context).colorScheme.onInverseSurface,
-          appBar: AppBar(
-            centerTitle: true,
-            flexibleSpace: Image.asset(
-              "assets/icon/branding_wide_empty.jpeg", 
-              fit: BoxFit.fitWidth, 
-              alignment: const Alignment(0, -0.8)
-            ),
-            title: Text(
-              state.selectedTabIdx == 0 ? "Files" : "Labels",
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ),
           drawer: state.selectedTabIdx == 0 ? SafeArea(child: Padding(padding: const EdgeInsets.only(top: 70, bottom: 90), 
           child: Drawer(child: SettingsSideMenu(settings: state.settings)))) : null,
           bottomNavigationBar: Stack(

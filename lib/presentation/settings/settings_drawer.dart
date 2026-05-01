@@ -37,7 +37,7 @@ class _SettingsSideMenuState extends State<SettingsSideMenu> {
         SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              "Show video names",
+              "Show files names",
               style: Theme.of(context).textTheme.titleMedium,
             ),
             value: showNames,
@@ -48,7 +48,7 @@ class _SettingsSideMenuState extends State<SettingsSideMenu> {
         SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              "Expand all label names",
+              "Expand all labels names",
               style: Theme.of(context).textTheme.titleMedium,
             ),
             value: expandTags,

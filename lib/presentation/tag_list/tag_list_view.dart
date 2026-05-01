@@ -15,6 +15,7 @@ class TagListView extends StatelessWidget {
       child: BlocBuilder<TagListBloc, TagListViewState>(
         builder: (context, state) {
           return Scaffold(
+            appBar: _appBar(context),
             body: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: ReorderableListView.builder(
@@ -79,5 +80,20 @@ class TagListView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  AppBar _appBar(BuildContext context){
+    return AppBar(
+            centerTitle: true,
+            flexibleSpace: Image.asset(
+              "assets/icon/branding_wide_empty.jpeg", 
+              fit: BoxFit.fitWidth, 
+              alignment: const Alignment(0, -0.8)
+            ),
+            title: Text(
+              "Labels",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          );
   }
 }

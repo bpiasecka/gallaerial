@@ -88,11 +88,12 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
     return BlocProvider<AssetListBloc>(
       create: (_) => dependencyService()..add(LoadAssetsEvent(filter: widget.filterModel, sort: widget.sortModel)),
       child: BlocBuilder<AssetListBloc, AssetListViewState>(
-        builder: (context, state) => Scaffold(
+        builder: (context, state) => 
+        DefaultTabController(length: 2, child: Scaffold(
           backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
-          appBar: const FilterSortAppBar(),
-          endDrawer: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
+          appBar: _appBar(context),
+          drawer: Padding(
+            padding: const EdgeInsets.only(bottom: 16.0, top: 142),
             child: Drawer(
               child: FilterSortSideMenu(
               currentFilter: state.filter,
@@ -102,34 +103,39 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
               ),
             ),
           ),
-          body: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-            child: state.displayedAssets.isEmpty
-                ? _noAssetsText(context, state)
-                : GridView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.only(bottom: 80, top: 10),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: state.settings.showNames ? 0.7 : 0.82,
-                    ),
-                    itemCount: state.displayedAssets.length,
-                    itemBuilder: (context, idx) => AssetThumbnailWidget(
-                      key: ValueKey(state.displayedAssets[idx].id),
-                      asset: state.displayedAssets[idx],
-                      tags: state.allTags,
-                      sortedAssetsIds: state.displayedAssets.map((v) => v.id).toList(),
-                      animatedNotifier: _animatedThumbnailNotifier,
-                      settings: state.settings,
-                      onTap: () => _openAsset(
-                        state.displayedAssets[idx], 
-                        state,
-                        context
-                      ),
-                    ),
-                  ),
+          body: Column(
+            children: [
+              const Align(alignment: Alignment.centerLeft, child: FilterSortAppBar()),
+              Expanded(child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                child: state.displayedAssets.isEmpty
+                    ? _noAssetsText(context, state)
+                    : GridView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.only(bottom: 80, top: 10),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: state.settings.showNames ? 0.7 : 0.82,
+                        ),
+                        itemCount: state.displayedAssets.length,
+                        itemBuilder: (context, idx) => AssetThumbnailWidget(
+                          key: ValueKey(state.displayedAssets[idx].id),
+                          asset: state.displayedAssets[idx],
+                          tags: state.allTags,
+                          sortedAssetsIds: state.displayedAssets.map((v) => v.id).toList(),
+                          animatedNotifier: _animatedThumbnailNotifier,
+                          settings: state.settings,
+                          onTap: () => _openAsset(
+                            state.displayedAssets[idx], 
+                            state,
+                            context
+                          ),
+                        ),
+                      )),
+              ),
+            ],
           ),
           floatingActionButton: FloatingActionButton(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -137,7 +143,7 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
             onPressed: () => pickAssets(context, state),
             child: const Icon(Icons.add),
           ),
-        ),
+        )),
       ),
     );
   }
@@ -195,5 +201,36 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
     List<String> videoIds = pickedAssets.map((asset) => asset.id).toList();
 
     return videoIds;
+  }
+
+  AppBar _appBar(BuildContext context){
+    return AppBar(
+            centerTitle: true,
+            flexibleSpace: Image.asset(
+              "assets/icon/branding_wide_empty.jpeg", 
+              fit: BoxFit.fitWidth, 
+              alignment: const Alignment(0, -0.8)
+            ),
+            title: Text(
+              "Files",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            bottom: PreferredSize(preferredSize: Size.fromHeight(30), child: SizedBox(height: 30, child: TabBar(
+            labelColor: Colors.black,
+            labelStyle: Theme.of(context).textTheme.titleMedium,
+            unselectedLabelColor: Colors.black54,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            indicatorSize: TabBarIndicatorSize.tab,
+            onTap: (int index) {
+              context.read<AssetListBloc>().add(
+              SetAssetTypeEvent( assetType: index == 0 ? AssetFilterType.video : AssetFilterType.image));
+            },
+            
+            tabs: const [
+              Tab(text: 'Videos'),
+              Tab(text: 'Images'),
+            ],
+          ))),
+      );
   }
 }

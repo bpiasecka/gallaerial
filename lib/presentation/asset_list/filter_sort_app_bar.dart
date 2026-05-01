@@ -10,7 +10,7 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
   const FilterSortAppBar({super.key});
 
   @override
-  Size get preferredSize => const Size(double.infinity, 48);
+  Size get preferredSize => const Size(double.infinity, 105);
 
   @override
   Widget build(BuildContext context) {
@@ -19,57 +19,61 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
         final hasActiveModifiers =
             _hasActiveFilters(state.filter) || _hasActiveSort(state.sort);
 
-        return AppBar(
-          backgroundColor:
-              Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
-          actions: [
-            if (hasActiveModifiers)
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  reverse: true,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ..._buildTagPills(context, state),
-                      if (state.filter.name != null &&
-                          state.filter.name!.isNotEmpty)
-                        _buildNamePill(context, state),
-                      if (_hasActiveSort(state.sort))
-                        _buildSortPill(context, state),
-                    ],
-                  ),
-                ),
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Container(
+              height: 36, 
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Theme.of(context).colorScheme.primary.withAlpha(00)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Builder(
+                        builder: (drawerContext) => Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () =>
+                                        Scaffold.of(drawerContext).openDrawer(),
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: const Padding(
+                                      padding: EdgeInsets.only(
+                                          left: 4.0, top: 3, right: 4),
+                                      child: _FilterPill(
+                                        text: 'Filter | Sort', 
+                                        filled: true
+                                      ),
+                                    ),
+                                  ),
+                                ])),
+                  Flexible(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                            ..._buildTagPills(context, state),
+                              if (state.filter.name != null &&
+                                  state.filter.name!.isNotEmpty)
+                                _buildNamePill(context, state),
+                              if (_hasActiveSort(state.sort))
+                                _buildSortPill(context, state),
+                    ]))),
+                ],
               ),
-            Builder(
-                builder: (drawerContext) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          InkWell(
-                            onTap: () =>
-                                Scaffold.of(drawerContext).openEndDrawer(),
-                            borderRadius: BorderRadius.circular(4),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0, vertical: 2.0),
-                              child: Text(
-                                'Filter | Sort',
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(right: 8.0, top: 2.0),
-                            child: Text(
-                              "${state.displayedAssets.length} files",
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                          ),
-                        ])),
-          ],
-        );
-      },
+            ),
+          ),
+          Padding(
+                                    padding:
+                                        const EdgeInsets.only(left:18.0, bottom: 4.0),
+                                    child: Text(
+                                      "${state.displayedAssets.length} files",
+                                      style: Theme.of(context).textTheme.labelMedium,
+                                    ),
+                                  ),          
+      ]);}
     );
   }
 
@@ -144,7 +148,7 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildSortPill(BuildContext context, AssetListViewState state) {
     return _FilterPill(
       text: _getSortText(state.sort),
-      leading: const Icon(Icons.sort, color: Colors.white, size: 14),
+      leading: const Icon(Icons.sort, color: Colors.black, size: 14),
       onRemove: () {
         context.read<AssetListBloc>().add(SetFilterAndSortEvent(
             filter: state.filter, sort: SortModel.empty(), assetType: state.assetType));
@@ -158,12 +162,14 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
 class _FilterPill extends StatelessWidget {
   final String text;
   final Widget? leading;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
+  final bool? filled;
 
   const _FilterPill({
     required this.text,
-    required this.onRemove,
+    this.onRemove,
     this.leading,
+    this.filled
   });
 
   @override
@@ -173,8 +179,9 @@ class _FilterPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
         decoration: BoxDecoration(
-          color: Colors.black54,
+          color: filled ?? false ? Theme.of(context).colorScheme.primary.withAlpha(250) : Theme.of(context).colorScheme.secondaryContainer.withAlpha(100),
           borderRadius: BorderRadius.circular(16),
+          border: BoxBorder.all(color: Theme.of(context).colorScheme.primary)
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -185,24 +192,24 @@ class _FilterPill extends StatelessWidget {
             ],
             Text(
               text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
+              style: TextStyle(
+                color: filled ?? false ? Colors.white : Colors.black,
+                fontSize: filled ?? false ? 14 : 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 4),
-            GestureDetector(
+            onRemove != null ? GestureDetector(
               onTap: onRemove,
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.white24,
+                  color: Colors.black12,
                   shape: BoxShape.circle,
                 ),
                 padding: const EdgeInsets.all(2.0),
-                child: const Icon(Icons.close, color: Colors.white, size: 14),
+                child: const Icon(Icons.close, color: Colors.black, size: 14),
               ),
-            ),
+            ) : const SizedBox.shrink(),
           ],
         ),
       ),
