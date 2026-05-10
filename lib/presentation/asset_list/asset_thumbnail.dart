@@ -123,6 +123,10 @@ class _AssetThumbnailState extends State<AssetThumbnailWidget> {
               Expanded(
                 child: Stack(
                   children: [
+                    Container(
+                      width: double.infinity, height: double.infinity,
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.black)
+                    ),
                     _buildImageLayer(snapshot.data),
 
                     _deleteButton(context),
@@ -164,6 +168,7 @@ class _AssetThumbnailState extends State<AssetThumbnailWidget> {
 
     return Container(
       width: double.infinity,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(8),

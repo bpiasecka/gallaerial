@@ -16,9 +16,6 @@ class FilterSortAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AssetListBloc, AssetListViewState>(
       builder: (context, state) {
-        final hasActiveModifiers =
-            _hasActiveFilters(state.filter) || _hasActiveSort(state.sort);
-
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(
             padding: const EdgeInsets.only(top: 8),

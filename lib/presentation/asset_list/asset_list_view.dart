@@ -9,6 +9,7 @@ import 'package:gallaerial/presentation/asset_list/filter_sort_side_menu.dart';
 import 'package:gallaerial/presentation/asset_list/asset_thumbnail.dart';
 import 'package:gallaerial/presentation/asset_list/asset_list_bloc.dart';
 import 'package:gallaerial/presentation/asset_display/assets_loop.dart';
+import 'package:gallaerial/presentation/settings/settings_drawer.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 class AssetListView extends StatefulWidget {
@@ -47,7 +48,7 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
     if (returnedId != null && returnedId is String) {
       final targetIndex = state.displayedAssets.indexWhere((a) => a.id == returnedId);
 
-      if (targetIndex != -1) {
+      if (targetIndex != -1 && context.mounted) {
         final screenWidth = MediaQuery.of(context).size.width;
         const crossAxisCount = 2;
         const crossAxisSpacing = 10.0;
@@ -89,7 +90,7 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
       create: (_) => dependencyService()..add(LoadAssetsEvent(filter: widget.filterModel, sort: widget.sortModel)),
       child: BlocBuilder<AssetListBloc, AssetListViewState>(
         builder: (context, state) => 
-        DefaultTabController(length: 2, child: Scaffold(
+        DefaultTabController(length: 3, child: Scaffold(
           backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(150),
           appBar: _appBar(context),
           drawer: Padding(
@@ -103,6 +104,8 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
               ),
             ),
           ),
+          endDrawer:SafeArea(child: Padding(padding: const EdgeInsets.only(top: 90, bottom: 90), 
+          child: Drawer(child: SettingsSideMenu(settings: state.settings)))),
           body: Column(
             children: [
               const Align(alignment: Alignment.centerLeft, child: FilterSortAppBar()),
@@ -179,33 +182,35 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
   }
 
   Future<void> pickAssets(BuildContext context, AssetListViewState state) async {
-    final assetsIds = await pickAssetsAndGetIds(context, state.assetType);
+    final assets = await pickAssetsAndGetIds(context, state.assetType);
 
-    if (assetsIds != null && context.mounted) {
-      context.read<AssetListBloc>().add(AssetAddedEvent(assetIds: assetsIds));
+    if (assets != null && context.mounted) {
+      context.read<AssetListBloc>().add(AssetAddedEvent(videosIds: assets[AssetType.video]!, imagesIds: assets[AssetType.image]!));
     }
   }
 
-  Future<List<String>?> pickAssetsAndGetIds(BuildContext context, AssetFilterType assetType) async {
+  Future<Map<AssetType, List<String>>?> pickAssetsAndGetIds(BuildContext context, AssetFilterType assetType) async {
     final List<AssetEntity>? pickedAssets = await AssetPicker.pickAssets(
       context,
       pickerConfig: AssetPickerConfig(
         maxAssets: 100,
-        requestType: assetType == AssetFilterType.video ? RequestType.video : RequestType.image,
+        requestType: RequestType.fromTypes([RequestType.image, RequestType.video])
       ),
     );
 
     if (pickedAssets == null || pickedAssets.isEmpty) {
       return null;
     }
-    List<String> videoIds = pickedAssets.map((asset) => asset.id).toList();
+    List<String> videoIds = pickedAssets.where((a) => a.type == AssetType.video).map((asset) => asset.id).toList();
+    List<String> imageIds = pickedAssets.where((a) => a.type == AssetType.image).map((asset) => asset.id).toList();
 
-    return videoIds;
+    return {AssetType.video: videoIds, AssetType.image: imageIds};
   }
 
   AppBar _appBar(BuildContext context){
     return AppBar(
             centerTitle: true,
+            automaticallyImplyLeading: false,
             flexibleSpace: Image.asset(
               "assets/icon/branding_wide_empty.jpeg", 
               fit: BoxFit.fitWidth, 
@@ -215,18 +220,35 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
               "Files",
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            bottom: PreferredSize(preferredSize: Size.fromHeight(30), child: SizedBox(height: 30, child: TabBar(
+            bottom: PreferredSize(preferredSize: const Size.fromHeight(30), child: SizedBox(height: 30, child: TabBar(
             labelColor: Colors.black,
             labelStyle: Theme.of(context).textTheme.titleMedium,
             unselectedLabelColor: Colors.black54,
             indicatorColor: Theme.of(context).colorScheme.primary,
             indicatorSize: TabBarIndicatorSize.tab,
             onTap: (int index) {
-              context.read<AssetListBloc>().add(
-              SetAssetTypeEvent( assetType: index == 0 ? AssetFilterType.video : AssetFilterType.image));
+              AssetFilterType assetType;
+              switch(index){
+                case 0:
+                  assetType = AssetFilterType.all;
+                  break;
+                case 1:
+                  assetType = AssetFilterType.video;
+                  break;
+                case 2:
+                  assetType = AssetFilterType.image;
+                  break;
+                default:
+                  assetType = AssetFilterType.all;
+              }
+              if (context.mounted) {
+                context.read<AssetListBloc>().add(
+              SetAssetTypeEvent( assetType: assetType));
+              }
             },
             
             tabs: const [
+              Tab(text: 'All'),
               Tab(text: 'Videos'),
               Tab(text: 'Images'),
             ],

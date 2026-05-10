@@ -32,6 +32,7 @@ import 'package:gallaerial/presentation/main/main_bloc.dart';
 import 'package:gallaerial/presentation/tag_list/tag_list_bloc.dart';
 import 'package:gallaerial/presentation/asset_list/asset_list_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 final GetIt dependencyService = GetIt.instance;
@@ -43,8 +44,20 @@ Future<void> main() async {
   await HiveDatabaseService.initialize();
   await initDependencyService();
   runApp(const MyApp());
-
+  checkForUpdate();
 }
+
+Future<void> checkForUpdate() async {
+    try {
+      AppUpdateInfo updateInfo = await InAppUpdate.checkForUpdate();
+
+      if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
+        await InAppUpdate.performImmediateUpdate();
+      }
+    } catch (e) {
+      debugPrint("Update check failed: $e");
+    }
+  }
 
 Future<void> initDependencyService() async {
   dependencyService.registerFactory(() => MainBloc());

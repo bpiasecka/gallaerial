@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -35,12 +36,16 @@ class VideoAssetRepositoryImpl extends BaseAssetRepository<VideoEntity, VideoDto
   @override
   Future<VideoEntity> setVideoCover(VideoEntity video, Uint8List image) async {
 
-    if(video.coverPath != null){
-      final oldFile = File(video.coverPath!);
-      if (await oldFile.exists()) {
-        await oldFile.delete();
-      }
+    if (video.coverPath != null) {
+  try {
+    final oldFile = File(video.coverPath!);
+    if (await oldFile.exists()) {
+      await oldFile.delete();
     }
+  } catch (e) {
+    log('Could not delete old cover, proceeding anyway: $e');
+  }
+}
 
     final directory = await getApplicationDocumentsDirectory();
 

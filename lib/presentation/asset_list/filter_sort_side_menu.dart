@@ -117,19 +117,6 @@ class _FilterSortSideMenuState extends State<FilterSortSideMenu> {
     );
   }
 
-  Widget _buildAssetTypeButton(){
-    return SegmentedButton<AssetFilterType>(
-      segments: const [
-        ButtonSegment(value: AssetFilterType.video, label: Text("Video")),
-        ButtonSegment(value: AssetFilterType.image, label: Text("Image"))
-      ],
-      showSelectedIcon: false,
-      selected: {_selectedAssetType},
-      onSelectionChanged: (types) => setState(() {
-        _selectedAssetType = types.first;
-      }),);
-  }
-
   Widget _buildLabelsList() {
     return Wrap(
       spacing: 5,

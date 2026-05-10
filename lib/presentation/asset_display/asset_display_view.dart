@@ -31,9 +31,11 @@ class FullScreenAssetViewer extends StatefulWidget {
 
 class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
   bool _isInitializing = false;
+  bool _isEditingName = false;
   bool _showControls = true;
   Timer? _hideControlsTimer;
   File? _mediaFile;
+  DateTime? _creationDate;
 
   VideoPlayerController? _controller;
   double _volumeBeforeMute = 1.0;
@@ -59,15 +61,24 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
     final AssetEntity? pickerAsset = await AssetEntity.fromId(entity.assetId);
     if (pickerAsset == null) return;
 
-    final File? file = await pickerAsset.file;
+    final File? file = await pickerAsset.originFile;
     if (file == null) return;
 
     if (mounted) setState(() => _mediaFile = file);
 
+    _creationDate = pickerAsset.createDateTime;
+
     if (entity is VideoEntity) {
-      final newController = VideoPlayerController.file(file);
+      final newController = VideoPlayerController.file(
+        file,
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true), 
+      );
+      
       try {
         await newController.initialize();
+        await newController.setVolume(0.0); 
+        _volumeBeforeMute = 1.0;
+
         newController.addListener(() { if (mounted) setState(() {}); });
 
         if (mounted) {
@@ -79,6 +90,10 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
         }
       } catch (e) {
         debugPrint("Error initializing video: $e");
+      }finally {
+        if (mounted) {
+          setState(() => _isInitializing = false);
+        }
       }
     } else {
       _startHideControlsTimer();
@@ -96,14 +111,16 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
 
   // --- TIMERS ---
   void _startHideControlsTimer() {
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 4), () {
-      if (widget.initialAsset is VideoEntity && _controller != null && !_controller!.value.isPlaying) {
-        return; 
-      }
-      if (mounted) setState(() => _showControls = false);
-    });
-  }
+  _hideControlsTimer?.cancel();
+  _hideControlsTimer = Timer(const Duration(seconds: 4), () {
+    if (_isEditingName) return; 
+
+    if (widget.initialAsset is VideoEntity && _controller != null && !_controller!.value.isPlaying) {
+      return; 
+    }
+    if (mounted) setState(() => _showControls = false);
+  });
+}
 
   void _resetHideControlsTimer() {
     if (_showControls) _startHideControlsTimer();
@@ -145,6 +162,25 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
           if (state.asset != null && _mediaFile == null && !_isInitializing) {
             _initializeMedia(state.asset!);
           }
+          if (state.coverUpdateStatus == CoverUpdateStatus.success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Cover image updated!'),
+                margin: EdgeInsets.only(bottom: 15, left: 10, right: 10),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          } else if (state.coverUpdateStatus == CoverUpdateStatus.failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Something went wrong.'),
+                margin: EdgeInsets.only(bottom: 15, left: 10, right: 10),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
         },
         builder: (context, state) {
           if (state.asset == null) {
@@ -180,11 +216,13 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
   Widget _buildMediaLayer(UserAssetEntity asset) {
     if (_mediaFile == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
 
+    Widget mediaWidget;
+
     switch (asset) {
       case ImageEntity _:
-        return Center(child: Image.file(_mediaFile!, fit: BoxFit.contain));
+        mediaWidget = Center(child: Image.file(_mediaFile!, fit: BoxFit.contain));
       case VideoEntity _:
-        return Center(
+        mediaWidget = Center(
           child: _controller != null && _controller!.value.isInitialized
               ? AspectRatio(
                   aspectRatio: _controller!.value.aspectRatio,
@@ -193,6 +231,13 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
               : const CircularProgressIndicator(color: Colors.white),
         );
     }
+
+    return InteractiveViewer(
+      minScale: 1.0,
+      maxScale: 5.0,
+      clipBehavior: Clip.none,
+      child: mediaWidget,
+    );
   }
 
   Widget _buildControlsOverlay(BuildContext context, AssetDisplayState state) {
@@ -205,17 +250,16 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
         ignoring: !_showControls,
         child: Stack(
           children: [
-            // Shared Overlays
-            _buildGradientBackground(), // Keep your existing method
-            _buildTagsList(context, state), // Keep your existing method
-            _buildTopBackButton(context), // Keep your existing method
-            _buildNameEditor(context, state), // Keep your existing method
+            _buildGradientBackground(), 
+            _buildTagsList(context, state), 
+            _buildTopBackButton(context),
+            _buildNameEditor(context, state),
+            _buildDateInfo(context, state),
 
-            // Video-Specific Overlays
             if (state.asset is VideoEntity && _controller != null) ...[
-              _buildCenterPlayPause(), // Keep your existing method
-              _savePreviewButton(context), // Keep your existing method
-              _buildBottomControls(context), // Keep your existing method
+              _buildCenterPlayPause(),
+              _savePreviewButton(context, state),
+              _buildBottomControls(context)
             ]
           ],
         ),
@@ -257,7 +301,7 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 60, left: 20),
+        padding: const EdgeInsets.only(top: 70, left: 12),
         child: GestureDetector(
           onTapUp: (_) => showDialog(
               context: context,
@@ -265,17 +309,29 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
                   AssetEditView(initialAsset: state.asset!)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 25,
-            children: tagsList.map((tag) => _tagElement(tag, state)).toList(),
+            spacing: 15,
+            children: tagsList.map((tag) => _tagElement(tag, state)).toList()..add(tagsList.isNotEmpty ? Container() : _buildEditTagsButton(context, state)),
           ),
         ),
       ),
     );
   }
 
-  Widget _tagElement(TagEntity tag, AssetDisplayState state) {
-    //if (tag == null) return Container(width: 20, height: 20, color: Colors.blue);
+  Widget _buildEditTagsButton(BuildContext context, AssetDisplayState state){
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(8)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+              const Icon(Icons.edit, color: Color.fromARGB(195, 255, 255, 255), size: 17),
+              const SizedBox(width: 10),
+              Text("Add tags", style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: Colors.white))
+            ])
+      );
+  }
 
+  Widget _tagElement(TagEntity tag, AssetDisplayState state) {
     return Container(
         color: Colors.transparent,
         child: Row(
@@ -283,8 +339,8 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Container(
-              width: 20,
-              height: 20,
+              width: 16,
+              height: 16,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: tag.color.toColor().withAlpha(180),
@@ -304,7 +360,7 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
                 tag.name,
                 style: Theme.of(context)
                     .textTheme
-                    .bodyLarge!
+                    .bodyMedium!
                     .copyWith(color: Colors.white),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -318,7 +374,7 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
       top: -10,
       left: 10,
       child: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 30),
+        icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 25),
         onPressed: () =>
             Navigator.of(context).pop(widget.initialAsset.id),
       ),
@@ -326,56 +382,75 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
   }
 
   Widget _buildNameEditor(BuildContext context, AssetDisplayState state) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SizedBox(
-        width: 240,
+  return Align(
+    alignment: Alignment.topCenter,
+    child: SizedBox(
+      width: 240,
+      child: Focus(
+        onFocusChange: (hasFocus) {
+          _isEditingName = hasFocus;
+          if (hasFocus) {
+            _hideControlsTimer?.cancel();
+          } else {
+            _startHideControlsTimer();
+          }
+        },
         child: InlineEditableText(
           initialText: state.asset!.name,
           limit: 50,
-          onTextChanged: (text) => context
-              .read<AssetDisplayBloc>()
-              .add(EditAssetNameEvent(newName: text)),
+          onTextChanged: (text) {
+            context.read<AssetDisplayBloc>().add(EditAssetNameEvent(newName: text));
+          },
           style: Theme.of(context)
               .textTheme
-              .titleMedium!
+              .bodyLarge!
+              .copyWith(color: Colors.white),
+        ),
+      ),
+    ),
+  );
+}
+
+  Widget _buildDateInfo(BuildContext context, AssetDisplayState state) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        padding: const EdgeInsets.only(top: 30),
+        width: 240,
+        child: Text(
+          _creationDate != null 
+            ? "${_creationDate!.day.toString().padLeft(2, '0')}.${_creationDate!.month.toString().padLeft(2, '0')}.${_creationDate!.year}" 
+            : '',
+          textAlign: TextAlign.center,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall!
               .copyWith(color: Colors.white),
         ),
       ),
     );
   }
 
-  Widget _savePreviewButton(BuildContext context) {
+  Widget _savePreviewButton(BuildContext context, AssetDisplayState state) {
     return Positioned(
       bottom: 10, right: 120, left: 120,
       child: TextButton.icon(
   style: TextButton.styleFrom(
-    backgroundColor: Colors.black54, // Dark, semi-transparent pill
+    backgroundColor: Colors.black54,
     foregroundColor: Colors.white,
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
-      side: const BorderSide(color: Colors.white24, width: 1), // Optional subtle border
+      side: const BorderSide(color: Colors.white24, width: 1),
     ),
   ),
   icon: const Icon(Icons.image_outlined, size: 20),
-  label: const Text(
-    "Set Cover", 
+  label: Text(
+    state.coverUpdateStatus == CoverUpdateStatus.loading ? "Saving..." : "Set Cover", 
     style: TextStyle(fontWeight: FontWeight.w600),
   ),
-  onPressed: () async {
+  onPressed: state.coverUpdateStatus == CoverUpdateStatus.loading ? null : () async {
     await _captureCurrentFrame(context);
-    
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cover image updated!'),
-          margin: EdgeInsets.only(bottom: 90, left: 10, right: 10),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   },
 ));
   }
@@ -470,7 +545,8 @@ class _FullScreenAssetViewerState extends State<FullScreenAssetViewer> {
       video: _mediaFile!.path,
       imageFormat: ImageFormat.JPEG,
       timeMs: currentPosition.inMilliseconds,
-      quality: 70,
+      quality: 60,
+      maxWidth: 720,
     );
 
     if (frameBytes != null && context.mounted) {

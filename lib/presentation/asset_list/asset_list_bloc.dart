@@ -28,9 +28,10 @@ class LoadAssetsEvent extends AssetListViewEvent {
 }
 
 class AssetAddedEvent extends AssetListViewEvent {
-  final List<String> assetIds;
+  final List<String> imagesIds;
+  final List<String> videosIds;
 
-  AssetAddedEvent({required this.assetIds});
+  AssetAddedEvent({required this.imagesIds, required this.videosIds});
 }
 
 class AssetRemovedEvent extends AssetListViewEvent {
@@ -114,7 +115,7 @@ class AssetListBloc extends Bloc<AssetListViewEvent, AssetListViewState> {
       filter: FilterModel(), 
       sort: SortModel.empty(), 
       settings: SettingsModel(), 
-      assetType: AssetFilterType.video)) {
+      assetType: AssetFilterType.all)) {
 
     on<LoadAssetsEvent>((event, emit) async {
       final combinedStream = Rx.combineLatest4(
@@ -151,14 +152,8 @@ class AssetListBloc extends Bloc<AssetListViewEvent, AssetListViewState> {
     });
 
     on<AssetAddedEvent>((event, emit) async {
-      switch (state.assetType) {
-        case AssetFilterType.video:
-          await dependencyService<AddAssetsUseCase<VideoEntity>>().call(event.assetIds);
-        case AssetFilterType.image:
-          await dependencyService<AddAssetsUseCase<ImageEntity>>().call(event.assetIds);
-        case AssetFilterType.all:
-          break;
-      }
+      await dependencyService<AddAssetsUseCase<VideoEntity>>().call(event.videosIds);
+      await dependencyService<AddAssetsUseCase<ImageEntity>>().call(event.imagesIds);
     });
 
     on<AssetRemovedEvent>((event, emit) {

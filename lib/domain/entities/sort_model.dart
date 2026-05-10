@@ -10,7 +10,11 @@ class SortModel {
   static SortModel empty() => SortModel(dateParameter: DateSortParameter.none, durationParameter: DurationSortParameter.none);
 
   Future<void> sort(List<UserAssetEntity> list) async {
-    if(dateParameter == DateSortParameter.none && durationParameter == DurationSortParameter.none) return;
+    if(dateParameter == DateSortParameter.none && durationParameter == DurationSortParameter.none){
+      list.sort((a, b) {   
+        return b.id.compareTo(a.id);
+      });
+    }
 
     final Map<String, AssetEntity?> assetCache = {};
 

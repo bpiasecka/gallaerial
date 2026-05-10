@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gallaerial/main.dart';
-import 'package:gallaerial/presentation/settings/settings_drawer.dart';
 import 'package:gallaerial/presentation/tag_list/tag_list_view.dart';
 import 'package:gallaerial/presentation/main/main_bloc.dart';
 import 'package:gallaerial/presentation/asset_list/asset_list_view.dart';
@@ -47,8 +46,6 @@ class _MainViewState extends State<MainView> {
         },
         builder: (context, state) => Scaffold(
           backgroundColor: Theme.of(context).colorScheme.onInverseSurface,
-          drawer: state.selectedTabIdx == 0 ? SafeArea(child: Padding(padding: const EdgeInsets.only(top: 70, bottom: 90), 
-          child: Drawer(child: SettingsSideMenu(settings: state.settings)))) : null,
           bottomNavigationBar: Stack(
             children: [
               Positioned.fill(
@@ -63,7 +60,7 @@ class _MainViewState extends State<MainView> {
                 selectedIndex: state.selectedTabIdx,
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
-                elevation: 0,
+                elevation: 5,
                 destinations: const [
                   NavigationDestination(icon: Icon(Icons.video_collection), label: "Files"),
                   NavigationDestination(icon: Icon(Icons.label), label: "Labels"),
