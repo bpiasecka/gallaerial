@@ -9,6 +9,7 @@ import 'package:gallaerial/presentation/asset_list/filter_sort_side_menu.dart';
 import 'package:gallaerial/presentation/asset_list/asset_thumbnail.dart';
 import 'package:gallaerial/presentation/asset_list/asset_list_bloc.dart';
 import 'package:gallaerial/presentation/asset_display/assets_loop.dart';
+import 'package:gallaerial/presentation/camera/camera_view.dart';
 import 'package:gallaerial/presentation/settings/settings_drawer.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -140,12 +141,23 @@ class _AssetListViewState extends State<AssetListView> with AutomaticKeepAliveCl
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            onPressed: () => pickAssets(context, state),
-            child: const Icon(Icons.add),
-          ),
+          floatingActionButton: Column(mainAxisSize: MainAxisSize.min, children: [
+            FloatingActionButton(
+              heroTag: 'add_btn',
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              onPressed: () => pickAssets(context, state),
+              child: const Icon(Icons.add),
+            ),
+            const SizedBox(width: 1, height: 10,),
+            FloatingActionButton(
+              heroTag: 'camera_btn',
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (contextNew) => CameraView(assetListBloc: context.read<AssetListBloc>(),),)),
+              child: const Icon(Icons.camera_alt),
+            ),
+          ])
         )),
       ),
     );
