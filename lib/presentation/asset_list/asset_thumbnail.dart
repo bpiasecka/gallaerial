@@ -9,6 +9,7 @@ import 'package:gallaerial/domain/entities/tag_entity.dart';
 import 'package:gallaerial/presentation/common/inline_editable_text.dart';
 import 'package:gallaerial/presentation/asset_tags_edit/asset_edit_view.dart';
 import 'package:gallaerial/presentation/asset_list/asset_list_bloc.dart';
+import 'package:photo_manager/photo_manager.dart'; 
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 class AssetThumbnailWidget extends StatefulWidget {
@@ -218,18 +219,60 @@ class _AssetThumbnailState extends State<AssetThumbnailWidget> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text('Remove $assetTypeName'),
-          content: Text('Are you sure you want to remove this ${assetTypeName.toLowerCase()}? (It will be removed only from this app, the original file remains on your device)'),
+          content: Text('How would you like to remove this ${assetTypeName.toLowerCase()}?'),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                context.read<AssetListBloc>().add(AssetRemovedEvent(asset: widget.asset));
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Remove'),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [OutlinedButton(
+                onPressed: () {
+                  context.read<AssetListBloc>().add(AssetRemovedEvent(asset: widget.asset));
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('Remove from App'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final bloc = context.read<AssetListBloc>();
+                  final messenger = ScaffoldMessenger.of(context);
+                  final asset = widget.asset;
+              
+                  try {
+                    final List<String> deletedIds = await PhotoManager.editor.deleteWithIds([asset.assetId]);
+                    
+                    if (deletedIds.contains(asset.assetId)) {
+                      bloc.add(AssetRemovedEvent(asset: asset));
+                    } else {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Device deletion cancelled')),
+                      );
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      return; 
+                    }
+                  } catch (e) {
+                    debugPrint("Failed to delete asset: $e");
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Failed to delete from device')),
+                    );
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                    return;
+                  }
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                },
+                child: const Text('Delete from Device'),
+              )]),
+            Padding(
+              padding: const EdgeInsets.only(top: 50),
+              child: TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
             ),
           ],
         );
