@@ -25,7 +25,7 @@ All data is currently stored 100% locally using **Hive**, ensuring blazing-fast 
 
 ## 🚧 Current Status & Roadmap
 
-The application is currently fully functional for local use and is in the **Closed Testing phase** on the Google Play Store. 
+The application is already released in Google Play, ready to install [Google Play](https://play.google.com/store/apps/details?id=com.basia.gallaerial&pcampaignid=web_share)
 
 **Upcoming Features:**
 - [x] *Manual selection of cover image*
@@ -34,6 +34,3 @@ The application is currently fully functional for local use and is in the **Clos
 - [x] *Clean up mode*
 - [ ] *Share selected files*
 
-
-## 🤝 Feedback & Testing
-If you want to join closed test in Google Play Store write an email: barbara.anna.piasecka@gmail.com
