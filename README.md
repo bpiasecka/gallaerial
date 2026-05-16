@@ -30,8 +30,9 @@ The application is currently fully functional for local use and is in the **Clos
 **Upcoming Features:**
 - [x] *Manual selection of cover image*
 - [x] *Extend stored asset types to images"
-- [ ] *Camera inside app*
-- [ ] *Clean up mode*
+- [x] *Camera inside app*
+- [x] *Clean up mode*
+- [ ] *Share selected files*
 
 
 ## 🤝 Feedback & Testing
